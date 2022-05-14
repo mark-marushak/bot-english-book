@@ -1,2 +1,8 @@
 telegram:
   bot-api: "727524540:AAHhJ6QsCU7AiAVl4QpFPyzSFsLgJcF0QGo"
+
+db:
+  name: "postgres"
+  user: "root"
+  password: "123456"
+  port: "5432"

@@ -50,6 +50,21 @@ How the event from Telegram will handle:
 <hr/>
 
 
+**Word type**
+should have:
+strength - is count of syllables in word 
+frequency - in the book\article etc.
+language - it needs to use translation in study
+
+**Book type**
+should has:
+words - it's mean that all words in use
+
+**Translate pkg**
+https://github.com/st3v/translator
+https://github.com/advancedlogic/go-freeling
+https://github.com/ernestas-poskus/syllables
+
 **Interesting resources**
 
 Libs fro telegram bot:
@@ -58,3 +73,8 @@ Libs fro telegram bot:
 
 Approaches to HTTP routing:
 - https://benhoyt.com/writings/go-routing/
+
+Keyboard repository:
+- https://github.com/gotgbot/keyboard
+- **Pagination**
+- https://github.com/ivolkoff/golang-telegram-bot-pagination
