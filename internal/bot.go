@@ -6,12 +6,15 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mark-marushak/bot-english-book/logger"
+	"github.com/mark-marushak/bot-english-book/pkg/telegram"
 )
 
 var botService *BotService
 
 type BotService struct {
-	done chan struct{}
+	done        chan struct{}
+	route       []telegram.RouteService
+	telegramBot tgbotapi.BotAPI
 }
 
 func GetBot() *BotService {
@@ -29,7 +32,7 @@ func (b *BotService) Stop() {
 	b.done <- struct{}{}
 }
 
-func (BotService) Start() {
+func (bs *BotService) Start() {
 	var (
 		config   = koanf.New(".")
 		parser   = yaml.Parser()
@@ -59,21 +62,16 @@ func (BotService) Start() {
 	updateConfig.Timeout = 30
 
 	updates := bot.GetUpdatesChan(updateConfig)
-	route := GetRoute()
 
+	bs.SetRoute()
 	logger.Get().Info("Tracking updates is started")
 
 	for update := range updates {
-		controller, err := route.Match(update)
+
+		err = bs.FindRoute(bot, update)
 		if err != nil {
 			logger.Get().Error("[Bot]: error while matching route %v", err)
 		}
 
-		msg, err := controller.Send(bot, update)
-		if err != nil {
-			logger.Get().Error("[Bot]: while sending message %v", err)
-		}
-
-		logger.Get().Info("[INFO BOT]: sending message %v", msg)
 	}
 }

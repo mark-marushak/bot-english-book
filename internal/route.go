@@ -1,26 +1,44 @@
 package internal
 
 import (
-	"github.com/mark-marushak/bot-english-book/internal/handler"
+	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/mark-marushak/bot-english-book/internal/route"
 	"github.com/mark-marushak/bot-english-book/pkg/telegram"
 )
 
-const (
-	ChooseBook = "choose-book"
-)
+func (b *BotService) SetRoute() {
+	routes := []telegram.RouteService{
+		telegram.NewRouteService(&route.UserRoute{}),
+	}
+	b.route = make([]telegram.RouteService, len(routes))
+	b.route = routes
+}
 
-func GetRoute() *telegram.RouteMap {
+func (b *BotService) FindRoute(bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
+	for i := 0; i < len(b.route); i++ {
+		b.route[i].SetBot(bot)
+		b.route[i].SetUpdate(update)
+		chatID, err := b.route[i].Analyze()
 
-	routeMap := telegram.NewRouteMap()
-	// todo: meke permission for route map
-	// if the group has permission on this route then it pass
-	// if the route stay after or before then it can't be pass
-	//routeMap.AddGroup(ChooseBook, []*telegram.Route{
-	//	telegram.NewRoute("*.pdf", telegram.NewHandler(handler.BookHanlder{})),
-	//})
+		if err == telegram.NotFoundError {
+			continue
+		}
 
-	routeMap.AddHandler(telegram.NewRoute(ChooseBook, telegram.NewHandler(handler.ChooseBookHandler{})))
+		return b.route[i].Response(chatID)
+	}
 
-	return routeMap
+	return notFoundResponse(bot, update)
+}
 
+func notFoundResponse(bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
+	message := tgbotapi.NewMessage(update.FromChat().ID, "I can't answer on this message")
+	// add some keyboard to this error
+	_, err := bot.Send(message)
+
+	if err != nil {
+		return err
+	}
+
+	return fmt.Errorf("route wasn't found. Client get response")
 }
