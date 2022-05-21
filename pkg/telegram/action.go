@@ -1,7 +1,5 @@
 package telegram
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-
 /*
 ActionService implement three basic functions
 Send - resposible for collect keyboard and text for sending
@@ -11,36 +9,51 @@ Output - return message text prepared for sending
 type ActionRepository interface {
 	Keyboard(i ...interface{}) interface{}
 	Output(...interface{}) string
+	SetChat(int64)
+	GetChat() int64
+	SetData(interface{})
+	GetData() interface{}
 }
 
-type Action struct {
-	chatID int64
+type ActionService interface {
+	Keyboard(i ...interface{}) interface{}
+	Output(...interface{}) string
+	SetChat(int64)
+	GetChat() int64
+	SetData(interface{})
+	GetData() interface{}
 }
 
-func (a *Action) SetChat(i int64) {
-	a.chatID = i
+type actionService struct {
+	repo ActionRepository
 }
 
-func (a Action) GetChat() int64 {
-	return a.chatID
-}
-
-type ActionService struct {
-	Update tgbotapi.Update
-	Bot    tgbotapi.BotAPI
-	action ActionRepository
-}
-
-func NewAction(action ActionRepository) *ActionService {
-	return &ActionService{
-		action: action,
+func NewAction(repo ActionRepository) ActionService {
+	return &actionService{
+		repo: repo,
 	}
 }
 
-func (a ActionService) Keyboard(i ...interface{}) interface{} {
-	return a.action.Keyboard(i)
+func (a actionService) Keyboard(i ...interface{}) interface{} {
+	return a.repo.Keyboard(i)
 }
 
-func (a ActionService) Output(i ...interface{}) string {
-	return a.action.Output(i)
+func (a actionService) Output(i ...interface{}) string {
+	return a.repo.Output(i)
+}
+
+func (a *actionService) SetChat(i int64) {
+	a.repo.SetChat(i)
+}
+
+func (a actionService) GetChat() int64 {
+	return a.repo.GetChat()
+}
+
+func (a *actionService) SetData(i interface{}) {
+	a.repo.SetData(i)
+}
+
+func (a *actionService) GetData() interface{} {
+	return a.repo.GetData()
 }

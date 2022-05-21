@@ -9,15 +9,17 @@ import (
 	"reflect"
 )
 
-type UserSave struct {
+type UserAskEmail struct {
 	BaseAction
+	ChatID int64
+	Data   interface{}
 }
 
-var userSaveText = `Welcome on a board %s, 
+const userAskEmailText = `Welcome on a board %s, 
 			you can either upload one book or choose any book in the bot 
 			to start study or just preparation to read full book`
 
-func (u UserSave) Keyboard(i ...interface{}) interface{} {
+func (u UserAskEmail) Keyboard(i ...interface{}) interface{} {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("Upload Book"),
@@ -28,17 +30,21 @@ func (u UserSave) Keyboard(i ...interface{}) interface{} {
 	)
 }
 
-func (u UserSave) Output(i ...interface{}) string {
+func (u UserAskEmail) Output(i ...interface{}) string {
 	data := u.GetData()
 	var update tgbotapi.Update
 	update, _ = reflect.ValueOf(data).Interface().(tgbotapi.Update)
+
 	repo := model.NewUserService(repository.NewUserRepository())
+	err := repo.Update(model.User{ChatID: update.FromChat().ID, Email: update.Message.Text})
+
+	if err != nil {
+		logger.Get().Error("error while saving a new user %v", err)
+	}
+
 	user, err := repo.Get(model.User{
 		ChatID: update.SentFrom().ID,
 	})
-	if err != nil {
-		logger.Get().Error("error while getting user from db %v", err)
-	}
 
 	return fmt.Sprintf(userSaveText, user.FirstName)
 }

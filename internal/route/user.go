@@ -4,13 +4,36 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mark-marushak/bot-english-book/internal/action"
 	"github.com/mark-marushak/bot-english-book/pkg/telegram"
+	"regexp"
 )
 
 type UserRoute struct {
 	Bot    *tgbotapi.BotAPI
 	Update tgbotapi.Update
-	action *telegram.ActionService
+	action telegram.ActionService
+
+	route map[string]map[string]telegram.ActionService
 }
+
+func (u *UserRoute) SetupRoutes() telegram.RouteService {
+	u.route = map[string]map[string]telegram.ActionService{
+		"messages": map[string]telegram.ActionService{
+			emailPattern: &action.UserAskEmail{},
+		},
+		"commands": map[string]telegram.ActionService{
+			"start": &action.StartHandler{},
+		},
+		"callbacks": map[string]telegram.ActionService{
+			//"start": &action.UserStudy{},
+		},
+		"contact": map[string]telegram.ActionService{
+			"": &action.UserAskPhone{},
+		},
+	}
+	return u
+}
+
+var emailPattern = "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
 
 func (u *UserRoute) SetBot(bot *tgbotapi.BotAPI) {
 	u.Bot = bot
@@ -20,24 +43,17 @@ func (u *UserRoute) SetUpdate(update tgbotapi.Update) {
 	u.Update = update
 }
 
-var commands = map[string]telegram.ActionRepository{
-	"start": &action.UserSave{},
-}
+func (u UserRoute) find(list, text string) telegram.ActionService {
 
-var messages = map[string]telegram.ActionRepository{
-	"phone": &action.UserPhone{},
-}
+	for cond, found := range u.route["messages"] {
+		if ok, _ := regexp.Match(cond, []byte(text)); ok {
+			return telegram.NewAction(
+				found,
+			)
+		}
+	}
 
-var callbacks = map[string]telegram.ActionRepository{
-	"start": &action.UserStudy{},
-}
-
-var contactRoutes = map[string]telegram.ActionRepository{
-	"": &action.UserPhone{},
-}
-
-func (u UserRoute) find(list map[string]telegram.ActionRepository, text string) *telegram.ActionService {
-	if found, ok := list[text]; ok {
+	if found, ok := u.route[list][text]; ok {
 		return telegram.NewAction(
 			found,
 		)
@@ -48,22 +64,22 @@ func (u UserRoute) find(list map[string]telegram.ActionRepository, text string) 
 
 func (u *UserRoute) Analyze() (int64, error) {
 	if u.Update.CallbackQuery != nil {
-		u.action = u.find(callbacks, u.Update.CallbackData())
+		u.action = u.find("callbacks", u.Update.CallbackData())
 		return u.Update.CallbackQuery.Message.Chat.ID, nil
 	}
 
 	if u.Update.Message.IsCommand() {
-		u.action = u.find(commands, u.Update.Message.Command())
+		u.action = u.find("commands", u.Update.Message.Command())
 		return u.Update.Message.Chat.ID, nil
 	}
 
 	if u.Update.Message.Contact != nil {
-		u.action = u.find(contactRoutes, u.Update.Message.Text)
+		u.action = u.find("contact", u.Update.Message.Text)
 		return u.Update.Message.Chat.ID, nil
 	}
 
 	if u.Update.Message != nil {
-		u.action = u.find(messages, u.Update.Message.Text)
+		u.action = u.find("messages", u.Update.Message.Text)
 		return u.Update.Message.Chat.ID, nil
 	}
 
@@ -72,6 +88,7 @@ func (u *UserRoute) Analyze() (int64, error) {
 
 func (u *UserRoute) Response(chatID int64) (err error) {
 	if u.action != nil {
+		u.action.SetData(u.Update)
 		message := tgbotapi.NewMessage(chatID, u.action.Output())
 		switch t := u.action.Keyboard().(type) {
 		case tgbotapi.ReplyKeyboardMarkup:

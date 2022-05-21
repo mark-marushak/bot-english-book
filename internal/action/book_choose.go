@@ -3,11 +3,10 @@ package action
 import (
 	"github.com/mark-marushak/bot-english-book/internal/mock"
 	"github.com/mark-marushak/bot-english-book/internal/model"
-	"github.com/mark-marushak/bot-english-book/pkg/telegram"
 )
 
 type BookChoose struct {
-	telegram.Action
+	BaseAction
 }
 
 func (b BookChoose) Keyboard(i ...interface{}) interface{} {

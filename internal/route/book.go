@@ -10,15 +10,21 @@ import (
 type BookRoute struct {
 	Bot    *tgbotapi.BotAPI
 	Update tgbotapi.Update
-	action *telegram.ActionService
+	action telegram.ActionService
+
+	route map[string]map[string]telegram.ActionService
 }
 
-var massages = map[string]telegram.ActionRepository{
-	"choose-book": &action.BookChoose{},
+func (b *BookRoute) SetRoute() {
+	b.route = map[string]map[string]telegram.ActionService{
+		"messages": map[string]telegram.ActionService{
+			"choose-book": &action.BookChoose{},
+		},
+	}
 }
 
-func (u BookRoute) find(list map[string]telegram.ActionRepository, text string) *telegram.ActionService {
-	if found, ok := list[text]; ok {
+func (b BookRoute) find(list, text string) telegram.ActionService {
+	if found, ok := b.route[list][text]; ok {
 		return telegram.NewAction(
 			found,
 		)
@@ -34,7 +40,7 @@ func (b *BookRoute) Analyze() (int64, error) {
 		text = strings.ToLower(text)
 		text = strings.ReplaceAll(text, " ", "-")
 
-		b.action = b.find(messages, text)
+		b.action = b.find("messages", text)
 		return b.Update.FromChat().ID, nil
 	}
 

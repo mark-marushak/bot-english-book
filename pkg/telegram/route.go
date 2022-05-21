@@ -24,6 +24,7 @@ type RouteRepository interface {
 	Response(int64) error
 	SetBot(*tgbotapi.BotAPI)
 	SetUpdate(update tgbotapi.Update)
+	SetupRoutes() RouteService
 }
 
 type RouteService interface {
@@ -31,6 +32,7 @@ type RouteService interface {
 	Response(int64) error
 	SetBot(*tgbotapi.BotAPI)
 	SetUpdate(update tgbotapi.Update)
+	SetupRoutes() RouteService
 }
 
 func NewRouteService(repository RouteRepository) RouteService {
@@ -53,4 +55,8 @@ func (r routeService) SetBot(bot *tgbotapi.BotAPI) {
 
 func (r routeService) SetUpdate(update tgbotapi.Update) {
 	r.repository.SetUpdate(update)
+}
+
+func (r *routeService) SetupRoutes() RouteService {
+	return r.repository.SetupRoutes()
 }

@@ -4,7 +4,8 @@ type Word struct {
 	Text       string `gorm: "type: varchar(50)"`
 	Frequency  int
 	Complexity int
-	Lang       string
+	LanguageID int
+	Language   Language
 }
 
 type WordService interface {

@@ -60,7 +60,7 @@ language - it needs to use translation in study
 should has:
 words - it's mean that all words in use
 
-**Translate pkg**
+**Translate pkg**syllables
 https://github.com/st3v/translator
 https://github.com/advancedlogic/go-freeling
 https://github.com/ernestas-poskus/syllables
@@ -78,3 +78,14 @@ Keyboard repository:
 - https://github.com/gotgbot/keyboard
 - **Pagination**
 - https://github.com/ivolkoff/golang-telegram-bot-pagination
+
+**Algorithm for game**
+1. get a word
+2. find synonyms
+3. translate every sysnonym and a word
+4. show translation of words
+
+**Hard words contain from 3 and more syllables**
+- frequency
+- Exception
+- disagree

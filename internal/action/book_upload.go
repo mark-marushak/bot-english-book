@@ -1,9 +1,7 @@
 package action
 
-import "github.com/mark-marushak/bot-english-book/pkg/telegram"
-
 type BookUpload struct {
-	telegram.Action
+	BaseAction
 }
 
 func (b BookUpload) Keyboard(i ...interface{}) interface{} {

@@ -5,7 +5,6 @@ import "gorm.io/gorm"
 type Language struct {
 	gorm.Model
 	Name string `gorm: "type: varchar(255)"`
-	Word []Word
 }
 
 type LanguageRepository interface {

@@ -9,7 +9,7 @@ import (
 
 func (b *BotService) SetRoute() {
 	routes := []telegram.RouteService{
-		telegram.NewRouteService(&route.UserRoute{}),
+		telegram.NewRouteService(&route.UserRoute{}).SetupRoutes(),
 	}
 	b.route = make([]telegram.RouteService, len(routes))
 	b.route = routes
