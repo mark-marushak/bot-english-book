@@ -3,3 +3,4 @@ config.yml
 go.mod
 go.sum
 docker-storage
+*/*.yml
