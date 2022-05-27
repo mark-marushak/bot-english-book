@@ -15,15 +15,17 @@ type Word struct {
 }
 
 type WordService interface {
-	GetTranslations() []Word
-	GetSynonyms() []Word
+	GetTranslations(Word) ([]Word, error)
+	GetTranslate(Word) (*Word, error)
+	GetSynonyms(Word) ([]Word, error)
 	Create(Word) (Word, error)
 	Get(Word) (Word, error)
 	Update(Word) (Word, error)
 }
 type WordRepository interface {
-	GetTranslations() []Word
-	GetSynonyms() []Word
+	GetTranslations(Word) ([]Word, error)
+	GetTranslate(Word) (*Word, error)
+	GetSynonyms(Word) ([]Word, error)
 	Create(Word) (Word, error)
 	Get(Word) (Word, error)
 	Update(Word) (Word, error)
@@ -40,12 +42,16 @@ func NewWordService(repository WordRepository) WordService {
 	}
 }
 
-func (w wordService) GetTranslations() []Word {
-	return w.repo.GetTranslations()
+func (w wordService) GetTranslations(word Word) ([]Word, error) {
+	return w.repo.GetTranslations(word)
 }
 
-func (w wordService) GetSynonyms() []Word {
-	return w.repo.GetSynonyms()
+func (w wordService) GetTranslate(word Word) (*Word, error) {
+	return w.repo.GetTranslate(word)
+}
+
+func (w wordService) GetSynonyms(word Word) ([]Word, error) {
+	return w.repo.GetSynonyms(word)
 }
 
 func (w wordService) Create(word Word) (Word, error) {

@@ -31,3 +31,7 @@ func GetBookStorage(file string) string {
 		"book",
 		file)
 }
+
+func GetGoogleCredsFile(filename string) string {
+	return storageRoot() + "/ga/" + filename
+}

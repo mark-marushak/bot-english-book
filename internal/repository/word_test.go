@@ -171,4 +171,13 @@ func TestWordRepository(t *testing.T) {
 			t.Fail()
 		}
 	})
+
+	t.Run("GetTranslations", func(t *testing.T) {
+		word, err := repoWord.GetTranslate(model.Word{Text: "go"})
+		if err != nil {
+			t.Fail()
+		}
+
+		assert.Equal(t, word.Text, "іди")
+	})
 }
