@@ -10,7 +10,7 @@ import (
 )
 
 type UserSave struct {
-	BaseAction
+	AdaptorTelegramAction
 }
 
 var userSaveText = `Welcome on a board %s, 

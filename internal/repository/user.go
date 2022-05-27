@@ -18,7 +18,7 @@ func (u userRepository) Create(user model.User) error {
 }
 
 func (u userRepository) Update(user model.User) error {
-	result := db.DB().Model(&model.User{}).Where("chatID=?", user.ChatID).Update("email", user.Email)
+	result := db.DB().Where(user).Update("email", user.Email)
 	return result.Error
 }
 
@@ -33,10 +33,6 @@ func (u userRepository) UploadBook(file os.File) error {
 }
 
 func (u userRepository) Get(user model.User) (model.User, error) {
-	result, err := db.DB().Model(&model.User{}).Where("chatID=?", user.ChatID).Rows()
-	if err != nil {
-		return model.User{}, err
-	}
-	err = result.Scan(&user)
-	return user, err
+	result := db.DB().Where(user).Find(&user)
+	return user, result.Error
 }

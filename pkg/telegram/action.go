@@ -8,20 +8,24 @@ Output - return message text prepared for sending
 */
 type ActionRepository interface {
 	Keyboard(i ...interface{}) interface{}
-	Output(...interface{}) string
+	Output(...interface{}) (string, error)
 	SetChat(int64)
 	GetChat() int64
 	SetData(interface{})
 	GetData() interface{}
+	SetBot(interface{})
+	GetBot() interface{}
 }
 
 type ActionService interface {
 	Keyboard(i ...interface{}) interface{}
-	Output(...interface{}) string
+	Output(...interface{}) (string, error)
 	SetChat(int64)
 	GetChat() int64
 	SetData(interface{})
 	GetData() interface{}
+	SetBot(interface{})
+	GetBot() interface{}
 }
 
 type actionService struct {
@@ -38,7 +42,7 @@ func (a actionService) Keyboard(i ...interface{}) interface{} {
 	return a.repo.Keyboard(i)
 }
 
-func (a actionService) Output(i ...interface{}) string {
+func (a actionService) Output(i ...interface{}) (string, error) {
 	return a.repo.Output(i)
 }
 
@@ -56,4 +60,12 @@ func (a *actionService) SetData(i interface{}) {
 
 func (a *actionService) GetData() interface{} {
 	return a.repo.GetData()
+}
+
+func (a *actionService) SetBot(i interface{}) {
+	a.repo.SetBot(i)
+}
+
+func (a actionService) GetBot() interface{} {
+	return a.repo.GetBot()
 }

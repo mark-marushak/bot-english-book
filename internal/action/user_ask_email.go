@@ -5,14 +5,10 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mark-marushak/bot-english-book/internal/model"
 	"github.com/mark-marushak/bot-english-book/internal/repository"
-	"github.com/mark-marushak/bot-english-book/logger"
-	"reflect"
 )
 
 type UserAskEmail struct {
-	BaseAction
-	ChatID int64
-	Data   interface{}
+	AdaptorTelegramAction
 }
 
 const userAskEmailText = `Welcome on a board %s, 
@@ -30,21 +26,18 @@ func (u UserAskEmail) Keyboard(i ...interface{}) interface{} {
 	)
 }
 
-func (u UserAskEmail) Output(i ...interface{}) string {
-	data := u.GetData()
-	var update tgbotapi.Update
-	update, _ = reflect.ValueOf(data).Interface().(tgbotapi.Update)
+func (u UserAskEmail) Output(i ...interface{}) (string, error) {
 
 	repo := model.NewUserService(repository.NewUserRepository())
-	err := repo.Update(model.User{ChatID: update.FromChat().ID, Email: update.Message.Text})
+	err := repo.Update(model.User{ChatID: u.GetUpdate().FromChat().ID, Email: u.GetUpdate().Message.Text})
 
 	if err != nil {
-		logger.Get().Error("error while saving a new user %v", err)
+		return "", fmt.Errorf("error while saving a new user %v", err)
 	}
 
 	user, err := repo.Get(model.User{
-		ChatID: update.SentFrom().ID,
+		ChatID: u.GetUpdate().FromChat().ID,
 	})
 
-	return fmt.Sprintf(userSaveText, user.FirstName)
+	return fmt.Sprintf(userSaveText, user.FirstName), nil
 }

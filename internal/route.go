@@ -10,18 +10,19 @@ import (
 func (b *BotService) SetRoute() {
 	routes := []telegram.RouteService{
 		telegram.NewRouteService(&route.UserRoute{}).SetupRoutes(),
+		telegram.NewRouteService(&route.BookRoute{}).SetupRoutes(),
 	}
 	b.route = make([]telegram.RouteService, len(routes))
 	b.route = routes
 }
 
-func (b *BotService) FindRoute(bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
+func (b *BotService) FindRoute(bot tgbotapi.BotAPI, update tgbotapi.Update) error {
 	for i := 0; i < len(b.route); i++ {
 		b.route[i].SetBot(bot)
 		b.route[i].SetUpdate(update)
 		chatID, err := b.route[i].Analyze()
 
-		if err == telegram.NotFoundError {
+		if err == telegram.RouteNotFoundError {
 			continue
 		}
 
@@ -31,14 +32,12 @@ func (b *BotService) FindRoute(bot *tgbotapi.BotAPI, update tgbotapi.Update) err
 	return notFoundResponse(bot, update)
 }
 
-func notFoundResponse(bot *tgbotapi.BotAPI, update tgbotapi.Update) error {
+func notFoundResponse(bot tgbotapi.BotAPI, update tgbotapi.Update) error {
 	message := tgbotapi.NewMessage(update.FromChat().ID, "I can't answer on this message")
 	// add some keyboard to this error
-	_, err := bot.Send(message)
-
-	if err != nil {
+	if _, err := bot.Send(message); err != nil {
 		return err
 	}
 
-	return fmt.Errorf("route wasn't found. Client get response")
+	return fmt.Errorf("route wasn't found. Client get response ")
 }

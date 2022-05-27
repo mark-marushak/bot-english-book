@@ -5,7 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var NotFoundError = errors.New("Route not found")
+var RouteNotFoundError = errors.New("Route not found")
 
 /*
 RouteService implement middleware after message
@@ -22,7 +22,7 @@ type routeService struct {
 type RouteRepository interface {
 	Analyze() (int64, error)
 	Response(int64) error
-	SetBot(*tgbotapi.BotAPI)
+	SetBot(tgbotapi.BotAPI)
 	SetUpdate(update tgbotapi.Update)
 	SetupRoutes() RouteService
 }
@@ -30,7 +30,7 @@ type RouteRepository interface {
 type RouteService interface {
 	Analyze() (int64, error)
 	Response(int64) error
-	SetBot(*tgbotapi.BotAPI)
+	SetBot(tgbotapi.BotAPI)
 	SetUpdate(update tgbotapi.Update)
 	SetupRoutes() RouteService
 }
@@ -49,7 +49,7 @@ func (r routeService) Response(i int64) error {
 	return r.repository.Response(i)
 }
 
-func (r routeService) SetBot(bot *tgbotapi.BotAPI) {
+func (r routeService) SetBot(bot tgbotapi.BotAPI) {
 	r.repository.SetBot(bot)
 }
 

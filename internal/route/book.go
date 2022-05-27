@@ -1,26 +1,27 @@
 package route
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mark-marushak/bot-english-book/internal/action"
 	"github.com/mark-marushak/bot-english-book/pkg/telegram"
 	"strings"
 )
 
 type BookRoute struct {
-	Bot    *tgbotapi.BotAPI
-	Update tgbotapi.Update
-	action telegram.ActionService
-
-	route map[string]map[string]telegram.ActionService
+	baseRoute
 }
 
-func (b *BookRoute) SetRoute() {
+func (b *BookRoute) SetupRoutes() telegram.RouteService {
 	b.route = map[string]map[string]telegram.ActionService{
-		"messages": map[string]telegram.ActionService{
+		"messages": {
 			"choose-book": &action.BookChoose{},
+			"upload-book": &action.BookUpload{},
+		},
+		"documents": {
+			"": &action.BookSend{},
 		},
 	}
+
+	return b
 }
 
 func (b BookRoute) find(list, text string) telegram.ActionService {
@@ -33,29 +34,23 @@ func (b BookRoute) find(list, text string) telegram.ActionService {
 	return nil
 }
 
-func (b *BookRoute) Analyze() (int64, error) {
+func (b *BookRoute) Analyze() (chatID int64, err error) {
+	chatID = b.Update.FromChat().ID
+
 	if b.Update.Message != nil {
+
+		if b.Update.Message.Document != nil {
+			b.action = b.find("documents", b.Update.Message.Text)
+			return
+		}
 
 		text := b.Update.Message.Text
 		text = strings.ToLower(text)
 		text = strings.ReplaceAll(text, " ", "-")
 
 		b.action = b.find("messages", text)
-		return b.Update.FromChat().ID, nil
+		return
 	}
 
-	return 0, telegram.NotFoundError
-}
-
-func (b *BookRoute) Response(chatID int64) (err error) {
-	if b.action != nil {
-		message := tgbotapi.NewMessage(chatID, b.action.Output())
-		switch t := b.action.Keyboard().(type) {
-		case tgbotapi.ReplyKeyboardMarkup:
-			message.ReplyMarkup = t
-		}
-		_, err = b.Bot.Send(message)
-	}
-
-	return
+	return 0, telegram.RouteNotFoundError
 }

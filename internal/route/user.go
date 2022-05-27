@@ -1,32 +1,32 @@
 package route
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mark-marushak/bot-english-book/internal/action"
 	"github.com/mark-marushak/bot-english-book/pkg/telegram"
 	"regexp"
+	"strings"
 )
 
 type UserRoute struct {
-	Bot    *tgbotapi.BotAPI
-	Update tgbotapi.Update
-	action telegram.ActionService
-
-	route map[string]map[string]telegram.ActionService
+	baseRoute
 }
 
 func (u *UserRoute) SetupRoutes() telegram.RouteService {
 	u.route = map[string]map[string]telegram.ActionService{
-		"messages": map[string]telegram.ActionService{
+		"regex": {
 			emailPattern: &action.UserAskEmail{},
 		},
-		"commands": map[string]telegram.ActionService{
+		"messages": {
+			"start-study": &action.StudyStart{},
+			"next-lesson": &action.StudyNext{},
+		},
+		"commands": {
 			"start": &action.StartHandler{},
 		},
-		"callbacks": map[string]telegram.ActionService{
+		"callbacks": {
 			//"start": &action.UserStudy{},
 		},
-		"contact": map[string]telegram.ActionService{
+		"contact": {
 			"": &action.UserAskPhone{},
 		},
 	}
@@ -35,69 +35,67 @@ func (u *UserRoute) SetupRoutes() telegram.RouteService {
 
 var emailPattern = "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
 
-func (u *UserRoute) SetBot(bot *tgbotapi.BotAPI) {
-	u.Bot = bot
-}
-
-func (u *UserRoute) SetUpdate(update tgbotapi.Update) {
-	u.Update = update
-}
-
-func (u UserRoute) find(list, text string) telegram.ActionService {
-
-	for cond, found := range u.route["messages"] {
+func (u UserRoute) RegexSearch(text string) (telegram.ActionService, error) {
+	for cond, found := range u.route["regex"] {
 		if ok, _ := regexp.Match(cond, []byte(text)); ok {
 			return telegram.NewAction(
 				found,
-			)
+			), nil
 		}
 	}
 
+	return nil, telegram.RouteNotFoundError
+}
+
+func (u UserRoute) MessageSearch(text string) (telegram.ActionService, error) {
+	text = strings.ToLower(text)
+	text = strings.ReplaceAll(text, " ", "-")
+
+	if found, ok := u.route["messages"][text]; ok {
+		return telegram.NewAction(
+			found,
+		), nil
+	}
+
+	return nil, telegram.RouteNotFoundError
+}
+
+func (u UserRoute) find(list, text string) (telegram.ActionService, error) {
 	if found, ok := u.route[list][text]; ok {
 		return telegram.NewAction(
 			found,
-		)
+		), nil
 	}
 
-	return nil
+	return nil, telegram.RouteNotFoundError
 }
 
-func (u *UserRoute) Analyze() (int64, error) {
+func (u *UserRoute) Analyze() (chatID int64, err error) {
+	chatID = u.Update.FromChat().ID
+
 	if u.Update.CallbackQuery != nil {
-		u.action = u.find("callbacks", u.Update.CallbackData())
-		return u.Update.CallbackQuery.Message.Chat.ID, nil
+		u.action, err = u.find("callbacks", u.Update.CallbackData())
+		return
 	}
 
 	if u.Update.Message.IsCommand() {
-		u.action = u.find("commands", u.Update.Message.Command())
-		return u.Update.Message.Chat.ID, nil
+		u.action, err = u.find("commands", u.Update.Message.Command())
+		return
 	}
 
 	if u.Update.Message.Contact != nil {
-		u.action = u.find("contact", u.Update.Message.Text)
-		return u.Update.Message.Chat.ID, nil
+		u.action, err = u.find("contact", u.Update.Message.Text)
+		return
 	}
 
 	if u.Update.Message != nil {
-		u.action = u.find("messages", u.Update.Message.Text)
-		return u.Update.Message.Chat.ID, nil
-	}
-
-	return 0, telegram.NotFoundError
-}
-
-func (u *UserRoute) Response(chatID int64) (err error) {
-	if u.action != nil {
-		u.action.SetData(u.Update)
-		message := tgbotapi.NewMessage(chatID, u.action.Output())
-		switch t := u.action.Keyboard().(type) {
-		case tgbotapi.ReplyKeyboardMarkup:
-			message.ReplyMarkup = t
-		case tgbotapi.InlineKeyboardMarkup:
-			message.ReplyMarkup = t
+		u.action, err = u.RegexSearch(u.Update.Message.Text)
+		if err != nil {
+			u.action, err = u.MessageSearch(u.Update.Message.Text)
 		}
-		_, err = u.Bot.Send(message)
+
+		return
 	}
 
-	return
+	return 0, telegram.RouteNotFoundError
 }

@@ -1,8 +1,9 @@
 package action
 
 import (
-	"github.com/mark-marushak/bot-english-book/internal/mock"
 	"github.com/mark-marushak/bot-english-book/internal/model"
+	"github.com/mark-marushak/bot-english-book/internal/repository"
+	"github.com/mark-marushak/bot-english-book/logger"
 )
 
 type BookChoose struct {
@@ -13,9 +14,29 @@ func (b BookChoose) Keyboard(i ...interface{}) interface{} {
 	return nil
 }
 
-func (b BookChoose) Output(i ...interface{}) string {
-	model.NewBookService(repository.NewBookRepository())
-	return ""
+func (b BookChoose) Output(i ...interface{}) (string, error) {
+	//model.NewBookService(repository.NewBookRepository())
+	return "", nil
+}
+
+func updateStatusUser(chatID int64, bookID uint) error {
+	repo := model.NewUserService(repository.NewUserRepository())
+	user, err := repo.Get(model.User{ChatID: chatID})
+	if err != nil {
+		logger.Get().Error("Error while getting user for updating status")
+		return err
+	}
+
+	user.Status = model.USER_STUDY
+	user.BookID = bookID
+	err = repo.Update(user)
+
+	if err != nil {
+		logger.Get().Error("Error while updating user status and book id")
+		return err
+	}
+
+	return nil
 }
 
 //func (c ChooseBookHandler) Send(bot *tgbotapi.BotAPI, update tgbotapi.Update) (tgbotapi.Message, error) {

@@ -3,6 +3,7 @@ package action
 type BaseAction struct {
 	ChatID int64
 	Data   interface{}
+	Bot    interface{}
 }
 
 func (u *BaseAction) SetChat(i int64) {
@@ -19,4 +20,12 @@ func (u *BaseAction) SetData(i interface{}) {
 
 func (u BaseAction) GetData() interface{} {
 	return u.Data
+}
+
+func (u *BaseAction) SetBot(i interface{}) {
+	u.Bot = i
+}
+
+func (u BaseAction) GetBot() interface{} {
+	return u.Bot
 }

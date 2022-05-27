@@ -68,7 +68,7 @@ func (bs *BotService) Start() {
 
 	for update := range updates {
 
-		err = bs.FindRoute(bot, update)
+		err = bs.FindRoute(*bot, update)
 		if err != nil {
 			logger.Get().Error("[Bot]: error while matching route %v", err)
 		}

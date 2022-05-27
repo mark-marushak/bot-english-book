@@ -17,9 +17,9 @@ type User struct {
 	Phone     string `gorm "type: varchar(50)"`
 	Email     string `gorm "type: varchar(255)"`
 	FirstName string `gorm: "type: varchar(255)"`
-	Books     []Book `gorm: "many2many:user_books;foreignKey:BookID;References:UserID"`
 	BookID    uint   `gorm: "index:,unique"`
 	Status    string `gorm: "type: varchar(50)"`
+	Book      Book
 }
 
 type UserService interface {

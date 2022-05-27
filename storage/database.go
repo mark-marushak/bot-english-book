@@ -1,17 +1,33 @@
 package storage
 
 import (
+	"fmt"
 	"log"
 	"path/filepath"
 	"runtime"
 )
 
-func GetDBPath() string {
+func storageRoot() string {
 	_, b, _, ok := runtime.Caller(0)
-	basePath := filepath.Dir(b)
 
 	if !ok {
-		log.Fatal("[ERR]: GetDBPath ")
+		log.Fatal("[ERR]: storageRoot ")
 	}
-	return basePath + "/english-bot.db"
+
+	return filepath.Dir(b)
+}
+
+func GetDBPath() string {
+	return storageRoot() + "/english-bot.db"
+}
+
+func GetStorageRoot() string {
+	return storageRoot()
+}
+
+func GetBookStorage(file string) string {
+	return fmt.Sprintf("%s/%s/%s",
+		storageRoot(),
+		"book",
+		file)
 }

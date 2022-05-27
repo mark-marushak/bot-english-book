@@ -2,9 +2,7 @@ package db
 
 import (
 	"fmt"
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
+	config2 "github.com/mark-marushak/bot-english-book/config"
 	"github.com/mark-marushak/bot-english-book/internal/model"
 	"github.com/mark-marushak/bot-english-book/logger"
 	"gorm.io/driver/postgres"
@@ -16,17 +14,13 @@ var instance *gorm.DB
 // user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai
 func getPostgresConfig() string {
 	var (
-		config     = koanf.New(".")
-		parser     = yaml.Parser()
 		dbUser     string
 		dbPassword string
 		dbName     string
 		dbPort     string
 	)
 
-	if err := config.Load(file.Provider("config.yml"), parser); err != nil {
-		logger.Get().Error("error loading config: %v", err)
-	}
+	config := config2.Get()
 
 	if err := config.Unmarshal("db.user", &dbUser); err != nil {
 		logger.Get().Error("error while getting db.user: %v", err)
@@ -72,24 +66,32 @@ func DB() *gorm.DB {
 
 func PrepareTable() {
 	models := []interface{}{
-		&model.User{},
-		&model.Book{},
 		&model.Language{},
 		&model.Word{},
+		&model.Book{},
+		&model.User{},
 	}
 
 	for i := 0; i < len(models); i++ {
 		err := createOrUpdate(models[i])
 
 		if err != nil {
-			logger.Get().Error("[DB] while explicit including database: %v", err)
+			logger.Get().Error("[DB] PrepareTable function catch error: %v", err)
 		}
 	}
+
+	var countLangs int64
+	DB().Model(&model.Language{}).Where("code in ('en', 'ua')").Count(&countLangs)
+	if countLangs <= 0 {
+		langs := model.SetupLangs()
+		DB().Create(&langs)
+	}
+
 }
 
 func createOrUpdate(structure interface{}) (err error) {
 	if DB().Migrator().HasTable(structure) {
-		err = DB().Migrator().AutoMigrate(structure)
+		err = DB().AutoMigrate(structure)
 	} else {
 		err = DB().Migrator().CreateTable(structure)
 	}

@@ -5,7 +5,7 @@ import (
 )
 
 type StartHandler struct {
-	BaseAction
+	AdaptorTelegramAction
 }
 
 const (
@@ -23,6 +23,6 @@ func (s StartHandler) Keyboard(i ...interface{}) interface{} {
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButtonContact("Phone Number")))
 }
 
-func (s StartHandler) Output(i ...interface{}) string {
-	return startText
+func (s StartHandler) Output(i ...interface{}) (string, error) {
+	return startText, nil
 }
