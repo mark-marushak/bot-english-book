@@ -5,4 +5,5 @@ go.sum
 docker-storage
 */*.yml
 storage/error.log
-storage/book/*
+storage/book
+storage/ga
