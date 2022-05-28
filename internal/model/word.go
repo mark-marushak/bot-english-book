@@ -1,20 +1,35 @@
 package model
 
+import (
+	"gorm.io/gorm"
+)
+
 type Word struct {
-	Text       string `gorm: "type: varchar(50)"`
+	gorm.Model
+	ID         uint   `gorm:"primaryKey;index:,unique"`
+	Text       string `gorm:"type:varchar(50);index:,unique"`
 	Frequency  int
 	Complexity int
-	Lang       string
+	LanguageID uint
+	Language   Language
+	Books      []Book `gorm:"many2many:book_words;foreignKey:ID;joinForeignKey:BookID;References:ID;joinReferences:WordID"`
 }
 
 type WordService interface {
-	GetTranslations() []Word
-	GetSynonyms() []Word
+	GetTranslations(Word) ([]Word, error)
+	GetTranslate(Word) (*Word, error)
+	GetSynonyms(Word) ([]Word, error)
+	Create(Word) (Word, error)
+	Get(Word) (Word, error)
+	Update(Word) (Word, error)
 }
-
 type WordRepository interface {
-	GetTranslations() []Word
-	GetSynonyms() []Word
+	GetTranslations(Word) ([]Word, error)
+	GetTranslate(Word) (*Word, error)
+	GetSynonyms(Word) ([]Word, error)
+	Create(Word) (Word, error)
+	Get(Word) (Word, error)
+	Update(Word) (Word, error)
 }
 
 type wordService struct {
@@ -28,10 +43,26 @@ func NewWordService(repository WordRepository) WordService {
 	}
 }
 
-func (w wordService) GetTranslations() []Word {
-	return w.repo.GetTranslations()
+func (w wordService) GetTranslations(word Word) ([]Word, error) {
+	return w.repo.GetTranslations(word)
 }
 
-func (w wordService) GetSynonyms() []Word {
-	return w.repo.GetSynonyms()
+func (w wordService) GetTranslate(word Word) (*Word, error) {
+	return w.repo.GetTranslate(word)
+}
+
+func (w wordService) GetSynonyms(word Word) ([]Word, error) {
+	return w.repo.GetSynonyms(word)
+}
+
+func (w wordService) Create(word Word) (Word, error) {
+	return w.repo.Create(word)
+}
+
+func (w wordService) Update(word Word) (Word, error) {
+	return w.repo.Update(word)
+}
+
+func (w wordService) Get(word Word) (Word, error) {
+	return w.repo.Get(word)
 }

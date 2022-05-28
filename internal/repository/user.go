@@ -4,13 +4,11 @@ import (
 	"github.com/mark-marushak/bot-english-book/internal/db"
 	"github.com/mark-marushak/bot-english-book/internal/model"
 	"os"
-	"os/user"
 )
 
-type userRepository struct {
-}
+type userRepository struct{}
 
-func NewUserRepository() *userRepository {
+func NewUserRepository() model.UserRepository {
 	return &userRepository{}
 }
 
@@ -19,9 +17,9 @@ func (u userRepository) Create(user model.User) error {
 	return result.Error
 }
 
-func (u userRepository) Update(user user.User) error {
-	//TODO implement me
-	panic("implement me")
+func (u userRepository) Update(user model.User) error {
+	result := db.DB().Save(&user)
+	return result.Error
 }
 
 func (u userRepository) GetKnowingWords(limit, offset int) ([]model.Word, error) {
@@ -32,4 +30,9 @@ func (u userRepository) GetKnowingWords(limit, offset int) ([]model.Word, error)
 func (u userRepository) UploadBook(file os.File) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (u userRepository) Get(user model.User) (model.User, error) {
+	result := db.DB().Where(user).Find(&user)
+	return user, result.Error
 }

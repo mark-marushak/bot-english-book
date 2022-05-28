@@ -61,9 +61,11 @@ should has:
 words - it's mean that all words in use
 
 **Translate pkg**
-https://github.com/st3v/translator
-https://github.com/advancedlogic/go-freeling
-https://github.com/ernestas-poskus/syllables
+- https://github.com/st3v/translator
+
+**Syllables pkg**
+- https://github.com/advancedlogic/go-freeling
+- https://github.com/ernestas-poskus/syllables
 
 **Interesting resources**
 
@@ -78,3 +80,26 @@ Keyboard repository:
 - https://github.com/gotgbot/keyboard
 - **Pagination**
 - https://github.com/ivolkoff/golang-telegram-bot-pagination
+
+**Algorithm for game**
+1. get a word
+2. find synonyms
+3. translate every sysnonym and a word
+4. show translation of words
+
+**Hard words contain from 3 and more syllables**
+- frequency
+- Exception
+- disagree
+
+**DB migration**
+- https://github.com/golang-migrate/migrate
+
+**ORM**
+- https://github.com/ent/ent
+- https://gorm.io
+- https://github.com/gobuffalo/pop
+- https://github.com/go-pg/pg
+
+**Language framework**
+- https://github.com/pemistahl/lingua-go

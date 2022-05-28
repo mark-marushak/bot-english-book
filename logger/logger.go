@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"github.com/mark-marushak/bot-english-book/pkg/logger/zapadapter"
+	"github.com/mark-marushak/bot-english-book/storage"
+	"go.uber.org/zap"
+	"os"
 )
 
 var logger LoggerService
@@ -25,6 +29,17 @@ func NewLoggerService(repository LoggerRepository) LoggerService {
 		repo: repository,
 	}
 	return logger
+}
+
+func StartLogger() {
+	cfg := zap.NewProductionConfig()
+	cfg.OutputPaths = []string{
+		storage.GetStorageRoot() + string(os.PathSeparator) + "error.log",
+		"stderr",
+	}
+
+	zapLogger, _ := cfg.Build()
+	NewLoggerService(zapadapter.NewLogger(zapLogger))
 }
 
 func (l loggerService) Error(format string, a ...interface{}) {

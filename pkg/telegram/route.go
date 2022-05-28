@@ -3,112 +3,60 @@ package telegram
 import (
 	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/mark-marushak/bot-english-book/logger"
-	"strings"
 )
 
-var ErrNotMatched = errors.New("Path not matched ")
+var RouteNotFoundError = errors.New("Route not found")
 
-var routeMap *RouteMap
+/*
+RouteService implement middleware after message
+based on message or text is sent
+return appropriate action that send response message or will do some actions
 
-type Route struct {
-	path    string
-	handler *ServiceHandler
+Basically it is router or group router abstraction
+*/
+
+type routeService struct {
+	repository RouteRepository
 }
 
-func NewRoute(path string, handler *ServiceHandler) *Route {
-	return &Route{path, handler}
+type RouteRepository interface {
+	Analyze() (int64, error)
+	Response(int64) error
+	SetBot(tgbotapi.BotAPI)
+	SetUpdate(update tgbotapi.Update)
+	SetupRoutes() RouteService
 }
 
-type ReplayRoute struct {
-	ID      string
-	handler *ServiceHandler
+type RouteService interface {
+	Analyze() (int64, error)
+	Response(int64) error
+	SetBot(tgbotapi.BotAPI)
+	SetUpdate(update tgbotapi.Update)
+	SetupRoutes() RouteService
 }
 
-func NewReplayRoute(id string, handler *ServiceHandler) *ReplayRoute {
-	return &ReplayRoute{id, handler}
-}
-
-type RouteMap struct {
-	group        map[string][]*Route
-	routes       []*Route
-	replayRoutes []*ReplayRoute
-}
-
-func NewRouteMap() *RouteMap {
-	routeMap = &RouteMap{
-		map[string][]*Route{},
-		[]*Route{},
-		[]*ReplayRoute{},
+func NewRouteService(repository RouteRepository) RouteService {
+	return &routeService{
+		repository: repository,
 	}
-
-	return routeMap
 }
 
-func GetRouteMap() *RouteMap {
-	if routeMap == nil {
-		logger.Get().Error("[TELEGRAM]: getting route map before it was created", "")
-		return nil
-	}
-
-	return routeMap
+func (r routeService) Analyze() (int64, error) {
+	return r.repository.Analyze()
 }
 
-func (r RouteMap) Match(update tgbotapi.Update) (handler *ServiceHandler, err error) {
-	var text string
-
-	if update.CallbackQuery != nil {
-		for i := 0; i < len(r.replayRoutes); i++ {
-			if r.replayRoutes[i].ID == update.CallbackQuery.Data {
-				return r.replayRoutes[i].handler, nil
-			}
-		}
-
-		r.replayRoutes = []*ReplayRoute{}
-		return nil, ErrNotMatched
-	}
-
-	if update.Message != nil {
-		text = update.Message.Text
-		text = strings.ReplaceAll(text, " ", "-")
-		text = strings.TrimSpace(text)
-		text = strings.ToLower(text)
-
-		for i := 0; i < len(r.routes); i++ {
-			if r.routes[i].path == text {
-				return r.routes[i].handler, nil
-			}
-		}
-	}
-
-	return nil, ErrNotMatched
+func (r routeService) Response(i int64) error {
+	return r.repository.Response(i)
 }
 
-func (r *RouteMap) AddGroup(name string, routes []*Route) {
-	r.group[name] = make([]*Route, len(routes))
-	copy(r.group[name], routes)
+func (r routeService) SetBot(bot tgbotapi.BotAPI) {
+	r.repository.SetBot(bot)
 }
 
-func (r *RouteMap) AddHandler(route *Route) {
-	r.routes = addHandler(route, r.routes)
+func (r routeService) SetUpdate(update tgbotapi.Update) {
+	r.repository.SetUpdate(update)
 }
 
-func addHandler(route *Route, routes []*Route) []*Route {
-	//list := make([]*Route, len(routes)+1)
-	//copy(list, routes)
-	//list = append(list, route)
-	routes = append(routes, route)
-	return routes
-}
-
-func (r *RouteMap) AddHandlerCallback(route *ReplayRoute) {
-	r.replayRoutes = addHandlerCallback(route, r.replayRoutes)
-}
-
-func addHandlerCallback(route *ReplayRoute, routes []*ReplayRoute) []*ReplayRoute {
-	//list := make([]*ReplayRoute, len(routes)+1)
-	//copy(list, routes)
-	//list = append(list, route)
-	routes = append(routes, route)
-	return routes
+func (r *routeService) SetupRoutes() RouteService {
+	return r.repository.SetupRoutes()
 }
