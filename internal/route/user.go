@@ -4,8 +4,10 @@ import (
 	"github.com/mark-marushak/bot-english-book/internal/action"
 	"github.com/mark-marushak/bot-english-book/pkg/telegram"
 	"regexp"
-	"strings"
 )
+
+var emailPattern = "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
+var bookIDPattern = "^(book-id:)(\\d+)"
 
 type UserRoute struct {
 	baseRoute
@@ -14,11 +16,13 @@ type UserRoute struct {
 func (u *UserRoute) SetupRoutes() telegram.RouteService {
 	u.route = map[string]map[string]telegram.ActionService{
 		"regex": {
-			emailPattern: &action.UserAskEmail{},
+			emailPattern:  &action.UserAskEmail{},
+			bookIDPattern: &action.BookChoose{},
 		},
 		"messages": {
-			"start-study": &action.StudyStart{},
-			"next-lesson": &action.StudyNext{},
+			action.StartStudy:     &action.StudyStart{},
+			action.NextLesson:     &action.StudyStart{},
+			action.BackToMainMenu: &action.MainMenu{},
 		},
 		"commands": {
 			"start": &action.StartHandler{},
@@ -33,8 +37,6 @@ func (u *UserRoute) SetupRoutes() telegram.RouteService {
 	return u
 }
 
-var emailPattern = "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
-
 func (u UserRoute) RegexSearch(text string) (telegram.ActionService, error) {
 	for cond, found := range u.route["regex"] {
 		if ok, _ := regexp.Match(cond, []byte(text)); ok {
@@ -48,8 +50,8 @@ func (u UserRoute) RegexSearch(text string) (telegram.ActionService, error) {
 }
 
 func (u UserRoute) MessageSearch(text string) (telegram.ActionService, error) {
-	text = strings.ToLower(text)
-	text = strings.ReplaceAll(text, " ", "-")
+	//text = strings.ToLower(text)
+	//text = strings.ReplaceAll(text, " ", "-")
 
 	if found, ok := u.route["messages"][text]; ok {
 		return telegram.NewAction(
@@ -71,10 +73,17 @@ func (u UserRoute) find(list, text string) (telegram.ActionService, error) {
 }
 
 func (u *UserRoute) Analyze() (chatID int64, err error) {
+	if u.Update.FromChat() == nil {
+		return 0, telegram.RouteNotFoundError
+	}
+
 	chatID = u.Update.FromChat().ID
 
 	if u.Update.CallbackQuery != nil {
-		u.action, err = u.find("callbacks", u.Update.CallbackData())
+		u.action, err = u.RegexSearch(u.Update.CallbackData())
+		if err != nil {
+			u.action, err = u.find("callbacks", u.Update.CallbackData())
+		}
 		return
 	}
 

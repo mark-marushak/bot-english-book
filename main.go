@@ -19,16 +19,19 @@ func main() {
 
 	db.PrepareTable()
 
-	go handleSystemSignal()
+	done := make(chan struct{})
+	go internal.GetManager().Start(done)
+	go handleSystemSignal(done)
 	//go internal.NewManager().Start()
 	internal.GetBot().Start()
 }
 
-func handleSystemSignal() {
+func handleSystemSignal(done chan struct{}) {
 	systemSignal := make(chan os.Signal)
 	signal.Notify(systemSignal, os.Interrupt, os.Kill, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP)
 
 	<-systemSignal
+	close(done)
 
 	internal.GetBot().Stop()
 

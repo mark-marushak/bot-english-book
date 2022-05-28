@@ -13,12 +13,12 @@ func NewUserRepository() model.UserRepository {
 }
 
 func (u userRepository) Create(user model.User) error {
-	result := db.DB().FirstOrCreate(&user)
+	result := db.DB().Create(&user)
 	return result.Error
 }
 
 func (u userRepository) Update(user model.User) error {
-	result := db.DB().Where(user).Update("email", user.Email)
+	result := db.DB().Save(&user)
 	return result.Error
 }
 

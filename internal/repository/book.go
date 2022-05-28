@@ -16,7 +16,7 @@ func NewBookRepository() model.BookRepository {
 
 func (b bookRepository) FindAll() ([]model.Book, error) {
 	var books []model.Book
-	result := db.DB().Find(books)
+	result := db.DB().Find(&books)
 	return books, result.Error
 }
 
@@ -39,13 +39,18 @@ func (b bookRepository) CalcWord(file model.Book) (int64, error) {
 	return 0, nil
 }
 
-func (b bookRepository) FindByName(name string) (*model.Book, error) {
+func (b bookRepository) FindByName(name string) (model.Book, error) {
 	var book model.Book
 	result := db.DB().Model(&model.Book{}).Where("name = ?", name).Find(&book)
-	return &book, result.Error
+	return book, result.Error
 }
 
 func (b bookRepository) Get(book model.Book) (model.Book, error) {
 	result := db.DB().Where(book).Find(&book)
 	return book, result.Error
+}
+
+func (b bookRepository) Update(book model.Book) error {
+	result := db.DB().Save(&book)
+	return result.Error
 }

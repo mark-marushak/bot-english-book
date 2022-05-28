@@ -14,7 +14,7 @@ var botService *BotService
 type BotService struct {
 	done        chan struct{}
 	route       []telegram.RouteService
-	telegramBot tgbotapi.BotAPI
+	telegramBot *tgbotapi.BotAPI
 }
 
 func GetBot() *BotService {
@@ -63,11 +63,10 @@ func (bs *BotService) Start() {
 
 	updates := bot.GetUpdatesChan(updateConfig)
 
+	bs.telegramBot = bot
 	bs.SetRoute()
 	logger.Get().Info("Tracking updates is started")
-
 	for update := range updates {
-
 		err = bs.FindRoute(*bot, update)
 		if err != nil {
 			logger.Get().Error("[Bot]: error while matching route %v", err)

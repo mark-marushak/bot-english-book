@@ -10,8 +10,8 @@ var LanguageNotFoundErr = errors.New("language wasn't found in database")
 
 type Language struct {
 	gorm.Model
-	Name string `gorm: "type: varchar(255)"`
-	Code string `gorm: "type: varchar(3)"`
+	Name string `gorm:"type:varchar(255)"`
+	Code string `gorm:"type:varchar(3)"`
 }
 
 func SetupLangs() []Language {

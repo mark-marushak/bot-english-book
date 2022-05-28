@@ -3,7 +3,6 @@ package route
 import (
 	"github.com/mark-marushak/bot-english-book/internal/action"
 	"github.com/mark-marushak/bot-english-book/pkg/telegram"
-	"strings"
 )
 
 type BookRoute struct {
@@ -13,8 +12,8 @@ type BookRoute struct {
 func (b *BookRoute) SetupRoutes() telegram.RouteService {
 	b.route = map[string]map[string]telegram.ActionService{
 		"messages": {
-			"choose-book": &action.BookChoose{},
-			"upload-book": &action.BookUpload{},
+			action.OpenLibrary: &action.BookLibrary{},
+			action.UploadBook:  &action.BookUpload{},
 		},
 		"documents": {
 			"": &action.BookSend{},
@@ -35,6 +34,10 @@ func (b BookRoute) find(list, text string) telegram.ActionService {
 }
 
 func (b *BookRoute) Analyze() (chatID int64, err error) {
+	if b.Update.FromChat() == nil {
+		return 0, telegram.RouteNotFoundError
+	}
+
 	chatID = b.Update.FromChat().ID
 
 	if b.Update.Message != nil {
@@ -45,8 +48,8 @@ func (b *BookRoute) Analyze() (chatID int64, err error) {
 		}
 
 		text := b.Update.Message.Text
-		text = strings.ToLower(text)
-		text = strings.ReplaceAll(text, " ", "-")
+		//text = strings.ToLower(text)
+		//text = strings.ReplaceAll(text, " ", "-")
 
 		b.action = b.find("messages", text)
 		return

@@ -7,11 +7,12 @@ import (
 type Word struct {
 	gorm.Model
 	ID         uint   `gorm:"primaryKey;index:,unique"`
-	Text       string `gorm:"type: varchar(50);index:,unique"`
+	Text       string `gorm:"type:varchar(50);index:,unique"`
 	Frequency  int
 	Complexity int
 	LanguageID uint
 	Language   Language
+	Books      []Book `gorm:"many2many:book_words;foreignKey:ID;joinForeignKey:BookID;References:ID;joinReferences:WordID"`
 }
 
 type WordService interface {

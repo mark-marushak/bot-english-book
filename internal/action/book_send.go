@@ -3,7 +3,6 @@ package action
 import (
 	"encoding/json"
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mark-marushak/bot-english-book/config"
 	"github.com/mark-marushak/bot-english-book/internal/model"
 	"github.com/mark-marushak/bot-english-book/internal/repository"
@@ -20,10 +19,14 @@ type BookSend struct {
 	AdaptorTelegramAction
 }
 
-var textBookSend = `Ok, start with this book. Press button to get your first lesson`
+//var textBookSend = `Ok, start with this book. Press button to get your first lesson`
+var textBookSend = `Супер, твоя нова книжка додана. 
+Почекай повідомлення від мене, 
+що книжка готова до навчання
+Це зазвичай дуже швидка процедура! 1-2 хвилини`
 
 func (b BookSend) Keyboard(i ...interface{}) interface{} {
-	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Start Study")))
+	return StartStudyButton
 }
 
 func (b BookSend) Output(i ...interface{}) (string, error) {
@@ -65,20 +68,27 @@ func (b BookSend) Output(i ...interface{}) (string, error) {
 		return "", err
 	}
 
+	userRepo := model.NewUserService(repository.NewUserRepository())
+	user, err := userRepo.Get(model.User{ChatID: b.GetUpdate().FromChat().ID})
+	if err != nil {
+		return "", err
+	}
+
 	repo := model.NewBookService(repository.NewBookRepository())
 	book, err := repo.Create(model.Book{
 		MessageID:  b.GetUpdate().Message.MessageID,
 		Name:       document.FileName,
 		Complexity: 0.00,
 		Path:       path,
-		UserID:     uint(b.GetUpdate().FromChat().ID),
+		UserID:     user.ID,
+		Status:     model.BOOK_UPLOAD,
 	})
 
 	if err != nil {
 		return "", err
 	}
 
-	err = updateStatusUser(b.GetUpdate().FromChat().ID, book.ID)
+	err = b.updateStatusUser(b.GetUpdate().FromChat().ID, book.ID)
 	if err != nil {
 		return "", err
 	}

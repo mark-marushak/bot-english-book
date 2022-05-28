@@ -33,6 +33,10 @@ func (b *BotService) FindRoute(bot tgbotapi.BotAPI, update tgbotapi.Update) erro
 }
 
 func notFoundResponse(bot tgbotapi.BotAPI, update tgbotapi.Update) error {
+	if update.FromChat() == nil {
+		return fmt.Errorf("chat is nil")
+	}
+
 	message := tgbotapi.NewMessage(update.FromChat().ID, "I can't answer on this message")
 	// add some keyboard to this error
 	if _, err := bot.Send(message); err != nil {

@@ -13,12 +13,13 @@ const (
 
 type User struct {
 	gorm.Model
-	ChatID    int64  `gorm: "type:bigint"`
-	Phone     string `gorm "type: varchar(50)"`
-	Email     string `gorm "type: varchar(255)"`
-	FirstName string `gorm: "type: varchar(255)"`
-	BookID    uint   `gorm: "index:,unique"`
-	Status    string `gorm: "type: varchar(50)"`
+	ChatID    int64  `gorm:"type:bigint"`
+	Phone     string `gorm:"type:varchar(50)"`
+	Email     string `gorm:"type:varchar(255)"`
+	FirstName string `gorm:"type:varchar(255)"`
+	Status    string `gorm:"type:varchar(50)"`
+	PollID    int
+	BookID    uint
 	Book      Book
 }
 
