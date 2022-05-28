@@ -3,3 +3,5 @@ config.yml
 go.mod
 go.sum
 docker-storage
+storage/error.log
+storage/book/*
