@@ -1,6 +1,7 @@
 package action
 
 import (
+	"code.sajari.com/docconv"
 	"encoding/json"
 	"fmt"
 	"github.com/mark-marushak/bot-english-book/config"
@@ -19,7 +20,6 @@ type BookSend struct {
 	AdaptorTelegramAction
 }
 
-//var textBookSend = `Ok, start with this book. Press button to get your first lesson`
 var textBookSend = `Супер, твоя нова книжка додана. 
 Почекай повідомлення від мене, 
 що книжка готова до навчання
@@ -30,56 +30,45 @@ func (b BookSend) Keyboard(i ...interface{}) interface{} {
 }
 
 func (b BookSend) Output(i ...interface{}) (string, error) {
-	var document = b.GetUpdate().Message.Document
+	var (
+		bookRepo = model.NewBookService(repository.NewBookRepository())
+		userRepo = model.NewUserService(repository.NewUserRepository())
+		document = b.GetUpdate().Message.Document
+		filepath string
+	)
 
-	name := document.FileName
-	name = strings.ReplaceAll(name, " ", "-")
-	path := storage.GetBookStorage(name)
-	file, err := os.Create(path)
-	if err != nil {
-		logger.Get().Error("Book Send Action: %v", err)
-		return "", err
-	}
-	defer file.Close()
+	filepath = document.FileName
+	filepath = strings.ReplaceAll(filepath, " ", "-")
+	filepath = storage.GetBookStorage(filepath)
 
-	response, err := config.RequestTelegramBot("getFile", url.Values{"file_id": {document.FileID}})
-	if err != nil {
-		logger.Get().Error("Making link for downloading file %v", err)
-		return "", err
-	}
+	book, err := bookRepo.Get(model.Book{
+		Name: document.FileName,
+		Path: filepath,
+	})
 
-	var body config.ResponseBody
-	err = json.NewDecoder(response.Body).Decode(&body)
 	if err != nil {
-		logger.Get().Error("Reading body getFile %v", err)
 		return "", err
 	}
 
-	response, err = http.Get(fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", config.Token, body.Result["file_path"].(string)))
-	if err != nil {
-		logger.Get().Error("Telegram Token getting error: %v", err)
-		return "", err
-	}
-	defer response.Body.Close()
-
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		logger.Get().Error("Telegram Token getting error: %v", err)
-		return "", err
+	if book.ID > 0 {
+		return "Ця книжка вже є в нащі бібліотеці", nil
 	}
 
-	userRepo := model.NewUserService(repository.NewUserRepository())
+	filepath, err = b.getFile(filepath)
+	if err != nil {
+		return "Це є не допустимий формат. Будь ласка перевірте правельність формату який відправляєте. Формат має бути PDF", nil
+	}
+
 	user, err := userRepo.Get(model.User{ChatID: b.GetUpdate().FromChat().ID})
 	if err != nil {
 		return "", err
 	}
 
-	repo := model.NewBookService(repository.NewBookRepository())
-	book, err := repo.Create(model.Book{
+	book, err = bookRepo.Create(model.Book{
 		MessageID:  b.GetUpdate().Message.MessageID,
 		Name:       document.FileName,
 		Complexity: 0.00,
-		Path:       path,
+		Path:       filepath,
 		UserID:     user.ID,
 		Status:     model.BOOK_UPLOAD,
 	})
@@ -94,4 +83,69 @@ func (b BookSend) Output(i ...interface{}) (string, error) {
 	}
 
 	return textBookSend, nil
+}
+
+func (b BookSend) getFile(filepath string) (string, error) {
+	var document = b.GetUpdate().Message.Document
+	var err error
+	defer func(err *error) {
+		if err != nil {
+			if os.Remove(filepath) != nil {
+				logger.Get().Error("File removing error: %v", err)
+			}
+		}
+	}(&err)
+
+	file, err := os.Create(filepath)
+	if err != nil {
+		logger.Get().Error("Book Send Action: %v", err)
+		return "", err
+	}
+	defer file.Close()
+
+	response, err := config.RequestTelegramBot("getFile", url.Values{"file_id": {document.FileID}})
+	if err != nil {
+		logger.Get().Error("Making link for downloading file %v", err)
+		return "", err
+	}
+	defer response.Body.Close()
+
+	var body config.ResponseBody
+	err = json.NewDecoder(response.Body).Decode(&body)
+	if err != nil {
+		logger.Get().Error("Reading body getFile %v", err)
+		return "", err
+	}
+
+	err = b.DownloadFile(body.Result["file_path"].(string), file)
+	if err != nil {
+		return "", err
+	}
+
+	text, err := docconv.ConvertPath(filepath)
+	if err != nil {
+		return "", err
+	}
+	if len(text.Body) > 0 {
+		return filepath, nil
+	}
+
+	return "", fmt.Errorf("file is wrong")
+}
+
+func (b BookSend) DownloadFile(remoteFilePath string, file *os.File) error {
+	response, err := http.Get(fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", config.Token, remoteFilePath))
+	if err != nil {
+		logger.Get().Error("Telegram Token getting error: %v", err)
+		return err
+	}
+	defer response.Body.Close()
+
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		logger.Get().Error("Telegram Token getting error: %v", err)
+		return err
+	}
+
+	return nil
 }
