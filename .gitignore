@@ -2,3 +2,8 @@
 config.yml
 go.mod
 go.sum
+docker-storage
+*/*.yml
+storage/error.log
+storage/book
+storage/ga
