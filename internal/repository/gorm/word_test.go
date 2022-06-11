@@ -1,9 +1,8 @@
-package repository
+package gorm
 
 import (
 	"fmt"
 	"github.com/mark-marushak/bot-english-book/config"
-	"github.com/mark-marushak/bot-english-book/internal/db"
 	"github.com/mark-marushak/bot-english-book/internal/model"
 	"github.com/mark-marushak/bot-english-book/logger"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +12,6 @@ import (
 func TestWordRepository(t *testing.T) {
 	logger.StartLogger()
 	config.NewConfig()
-	db.PrepareTable()
 	repoWord := model.NewWordService(NewWordRepository())
 	repoLang := model.NewLanguageService(NewLanguageRepository())
 
@@ -22,9 +20,8 @@ func TestWordRepository(t *testing.T) {
 		lang, _ := repoLang.DetectLanguage(text)
 		word := model.Word{
 			Text:       text,
-			Frequency:  1,
 			Complexity: 2,
-			Language:   *lang,
+			Language:   lang,
 		}
 
 		word, err := repoWord.Create(word)
@@ -65,7 +62,7 @@ func TestWordRepository(t *testing.T) {
 	})
 
 	t.Run("CreateAssociation", func(t *testing.T) {
-		err := CreateAssociation(5)
+		err := CreateAssociation(7)
 		if err != nil {
 			t.Fail()
 		}

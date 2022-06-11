@@ -5,45 +5,20 @@ import (
 	"github.com/mark-marushak/bot-english-book/internal"
 	"github.com/mark-marushak/bot-english-book/internal/db"
 	"github.com/mark-marushak/bot-english-book/logger"
-	"log"
-	"os"
-	"os/signal"
-	"path/filepath"
 	"runtime"
-	"syscall"
 )
 
 func main() {
+	runtime.GOMAXPROCS(2)
 	logger.StartLogger()
 	config.NewConfig()
 
-	db.PrepareTable()
-
-	done := make(chan struct{})
-	go internal.GetManager().Start(done)
-	go handleSystemSignal(done)
-	//go internal.NewManager().Start()
-	internal.GetBot().Start()
-}
-
-func handleSystemSignal(done chan struct{}) {
-	systemSignal := make(chan os.Signal)
-	signal.Notify(systemSignal, os.Interrupt, os.Kill, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP)
-
-	<-systemSignal
-	close(done)
-
-	internal.GetBot().Stop()
-
-	os.Exit(0)
-}
-
-func RootFolder() string {
-	_, b, _, ok := runtime.Caller(0)
-
-	if !ok {
-		log.Fatal("[ERR]: RootFolder ")
+	if err := db.PrepareTable(); err != nil {
+		logger.Get().Error("Error while preparing database to use: %v", err)
+		return
 	}
 
-	return filepath.Dir(b)
+	go internal.GetManager().Start()
+	internal.GetBot().Start()
+
 }

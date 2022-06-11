@@ -1,8 +1,7 @@
-package repository
+package gorm
 
 import (
 	"github.com/mark-marushak/bot-english-book/config"
-	"github.com/mark-marushak/bot-english-book/internal/db"
 	"github.com/mark-marushak/bot-english-book/internal/model"
 	"github.com/mark-marushak/bot-english-book/logger"
 	"testing"
@@ -11,7 +10,6 @@ import (
 func TestLanguageRepository(t *testing.T) {
 	logger.StartLogger()
 	config.NewConfig()
-	db.PrepareTable()
 
 	service := model.NewLanguageService(NewLanguageRepository())
 
@@ -47,4 +45,5 @@ func TestLanguageRepository(t *testing.T) {
 			t.Fail()
 		}
 	})
+
 }

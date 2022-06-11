@@ -4,7 +4,7 @@ import (
 	"fmt"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mark-marushak/bot-english-book/internal/model"
-	"github.com/mark-marushak/bot-english-book/internal/repository"
+	"github.com/mark-marushak/bot-english-book/internal/repository/gorm"
 	"strconv"
 )
 
@@ -25,7 +25,7 @@ func (b BookLibrary) Keyboard(i ...interface{}) interface{} {
 }
 
 func (b BookLibrary) Output(i ...interface{}) (string, error) {
-	bookService := model.NewBookService(repository.NewBookRepository())
+	bookService := model.NewBookService(gorm.NewBookRepository())
 	books, err := bookService.FindAll()
 	if err != nil {
 		return "", err

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"runtime"
+	"sync"
 )
 
 var (
@@ -18,6 +19,7 @@ var (
 	parser             = yaml.Parser()
 	TokenNotFoundError = errors.New("token not found")
 	Token              string
+	WG                 *sync.WaitGroup
 )
 
 func configFolder(configFile string) string {
@@ -57,6 +59,15 @@ func Get() *koanf.Koanf {
 type ResponseBody struct {
 	OK     bool                   `json:"ok"`
 	Result map[string]interface{} `json:"result"`
+}
+
+func SetWaitGroup(wg *sync.WaitGroup) *sync.WaitGroup {
+	WG = wg
+	return WG
+}
+
+func GetWaitGroup() *sync.WaitGroup {
+	return WG
 }
 
 //func IsExceptionError(err error) bool {

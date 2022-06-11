@@ -3,7 +3,7 @@ package action
 import (
 	"fmt"
 	"github.com/mark-marushak/bot-english-book/internal/model"
-	"github.com/mark-marushak/bot-english-book/internal/repository"
+	"github.com/mark-marushak/bot-english-book/internal/repository/gorm"
 )
 
 type UserAskEmail struct {
@@ -25,7 +25,7 @@ func (u UserAskEmail) Keyboard(i ...interface{}) interface{} {
 }
 
 func (u UserAskEmail) Output(i ...interface{}) (string, error) {
-	repo := model.NewUserService(repository.NewUserRepository())
+	repo := model.NewUserService(gorm.NewUserRepository())
 	user, err := repo.Get(model.User{ChatID: u.GetUpdate().FromChat().ID})
 	if err != nil {
 		return "", fmt.Errorf("UserAskEmail: user wasn't found %v", err)

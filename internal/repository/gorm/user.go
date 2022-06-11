@@ -1,4 +1,4 @@
-package repository
+package gorm
 
 import (
 	"github.com/mark-marushak/bot-english-book/internal/db"
@@ -13,12 +13,12 @@ func NewUserRepository() model.UserRepository {
 }
 
 func (u userRepository) Create(user model.User) error {
-	result := db.DB().Create(&user)
+	result := db.Gorm().Create(&user)
 	return result.Error
 }
 
 func (u userRepository) Update(user model.User) error {
-	result := db.DB().Save(&user)
+	result := db.Gorm().Save(&user)
 	return result.Error
 }
 
@@ -33,6 +33,6 @@ func (u userRepository) UploadBook(file os.File) error {
 }
 
 func (u userRepository) Get(user model.User) (model.User, error) {
-	result := db.DB().Where(user).Find(&user)
+	result := db.Gorm().Where(user).Find(&user)
 	return user, result.Error
 }

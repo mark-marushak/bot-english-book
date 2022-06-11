@@ -4,8 +4,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mark-marushak/bot-english-book/internal/db"
 	"github.com/mark-marushak/bot-english-book/internal/model"
-	"github.com/mark-marushak/bot-english-book/internal/repository"
-	"os/user"
+	"github.com/mark-marushak/bot-english-book/internal/repository/gorm"
+	"github.com/mark-marushak/bot-english-book/internal/repository/sqlx"
+	"github.com/mark-marushak/bot-english-book/logger"
 	"time"
 )
 
@@ -23,43 +24,74 @@ func GetManager() *Manager {
 	return &Manager{}
 }
 
-func (Manager) lookAfterActivity() {
-	db.DB().Find(&user.User{})
+func (m Manager) getUploadedBooks() (books []model.Book, err error) {
+	tx := db.Gorm().Model(&model.Book{}).Where("status = ?", model.BOOK_UPLOAD).Find(&books)
+	return books, tx.Error
 }
 
-func (m Manager) PrepareBook(id uint) error {
-	return repository.CreateAssociation(id)
+func (m Manager) prepareBook(id uint) error {
+	logger.Get().Info("Start preparing a book %d", id)
+	return sqlx.CreateAssociation(id)
 }
 
-func (m Manager) Start(done chan struct{}) {
+func (m Manager) changeStatusBook(book model.Book) error {
+	book.Status = model.BOOK_COMPLETE
+
+	err := gorm.NewBookRepository().Update(book)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m Manager) notifyRelatedUsers(book model.Book) (err error) {
+	var users []model.User
+	tx := db.Gorm().Model(&model.User{}).Where("book_id = ?", book.ID).Find(&users)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	msg := func(chatID int64) tgbotapi.Chattable {
+		return tgbotapi.NewMessage(chatID, "Твоя книжка вже готова, можна починати урок")
+	}
+
+	for i := 0; i < len(users); i++ {
+		_, err = GetBot().telegramBot.Send(msg(users[i].ChatID))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m Manager) Start() {
 	for {
-		var books []model.Book
-		db.DB().Model(&model.Book{}).Where("status = ?", model.BOOK_UPLOAD).Find(&books)
+		books, err := m.getUploadedBooks()
+		if err != nil {
+			logger.Get().Error("Error while getting uploaded books: %v", err)
+			continue
+		}
+
 		if len(books) > 0 {
 			for i := 0; i < len(books); i++ {
-				// create relationship many2many
-				err := m.PrepareBook(books[i].ID)
+				err = m.prepareBook(books[i].ID)
 				if err != nil {
+					logger.Get().Error("Error while prepare book: %v", err)
 					continue
 				}
 
-				books[i].Status = model.BOOK_COMPLETE
-				err = repository.NewBookRepository().Update(books[i])
+				err = m.changeStatusBook(books[i])
 				if err != nil {
-					continue
+					logger.Get().Error("The book %d was prepared %v", err)
 				}
 
-				var users []model.User
-				db.DB().Model(&model.User{}).Where("book_id = ?", books[i].ID).Find(&users)
-
-				msg := func(chatID int64) tgbotapi.Chattable {
-					return tgbotapi.NewMessage(chatID, "Твоя книжка вже готова, можна починати урок")
+				err = m.notifyRelatedUsers(books[i])
+				if err != nil {
+					logger.Get().Error("The message wasn't reached the client. Client didn't get notification: %v", err)
 				}
 
-				// notify all subscribers
-				for i := 0; i < len(users); i++ {
-					GetBot().telegramBot.Send(msg(users[i].ChatID))
-				}
 			}
 		}
 

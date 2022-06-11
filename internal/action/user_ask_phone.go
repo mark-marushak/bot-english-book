@@ -2,7 +2,7 @@ package action
 
 import (
 	"github.com/mark-marushak/bot-english-book/internal/model"
-	"github.com/mark-marushak/bot-english-book/internal/repository"
+	"github.com/mark-marushak/bot-english-book/internal/repository/gorm"
 	"github.com/mark-marushak/bot-english-book/logger"
 )
 
@@ -23,13 +23,12 @@ func (u UserAskPhone) Output(i ...interface{}) (string, error) {
 
 	contact := u.GetUpdate().Message.Contact
 
-	repo := model.NewUserService(repository.NewUserRepository())
+	repo := model.NewUserService(gorm.NewUserRepository())
 	err := repo.Create(model.User{
 		ChatID:    u.GetUpdate().SentFrom().ID,
 		Phone:     contact.PhoneNumber,
 		Email:     "",
 		FirstName: contact.FirstName,
-		BookID:    0,
 		Status:    model.USER_NEW,
 	})
 

@@ -1,4 +1,4 @@
-package repository
+package gorm
 
 import (
 	"fmt"
@@ -15,7 +15,6 @@ var testBookPath = "/home/sanbox/development/golang-projects/english-new-words/s
 func TestBookRepository(t *testing.T) {
 	logger.StartLogger()
 	config.NewConfig()
-	db.PrepareTable()
 
 	t.Run("Create", func(t *testing.T) {
 		repo := model.NewBookService(NewBookRepository())
@@ -36,7 +35,7 @@ func TestBookRepository(t *testing.T) {
 	t.Run("CalcWords", func(t *testing.T) {
 		book := model.Book{}
 		book.Name = "difficult situations quiz.pdf"
-		db.DB().Where(book).Preload("Words").Find(&book)
+		db.Gorm().Where(book).Preload("Words").Find(&book)
 
 		if len(book.Words) <= 0 {
 			t.Fail()

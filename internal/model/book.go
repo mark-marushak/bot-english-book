@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
+	"time"
 )
 
 var ErrBookNotFound = errors.New("Book isn't found ")
@@ -15,15 +16,17 @@ const (
 )
 
 type Book struct {
-	gorm.Model
-	ID         uint `gorm:"primaryKey;index:,unique"`
-	MessageID  int
-	Name       string  `gorm:"type: varchar(500);index:,unique"`
-	Complexity float32 `gorm:"type: decimal(2,2)"`
-	Path       string  `gorm:"type: varchar(500);"`
-	UserID     uint
-	Status     string `gorm:"type: varchar(10)"`
-	Words      []Word `gorm:"many2many:book_words;foreignKey:ID;joinForeignKey:BookID;References:ID;joinReferences:WordID"`
+	ID         uint           `gorm:"primaryKey;index:,unique"`
+	MessageID  int            `db:"message_id"`
+	Name       string         `gorm:"type: varchar(500);index:,unique"`
+	Complexity float32        `gorm:"type: decimal(2,2)"`
+	Path       string         `gorm:"type: varchar(500);"`
+	UserID     uint           `db:"user_id"`
+	Status     string         `gorm:"type: varchar(10)"`
+	Words      []Word         `gorm:"many2many:book_words;foreignKey:ID;joinForeignKey:BookID;References:ID;joinReferences:WordID"`
+	CreatedAt  time.Time      `db:"created_at"`
+	UpdatedAt  time.Time      `db:"updated_at"`
+	DeletedAt  gorm.DeletedAt `db:"deleted_at" gorm:"index"`
 }
 
 type bookService struct {

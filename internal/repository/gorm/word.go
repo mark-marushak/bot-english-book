@@ -1,10 +1,9 @@
-package repository
+package gorm
 
 import (
 	translate "cloud.google.com/go/translate/apiv3"
 	"code.sajari.com/docconv"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/ernestas-poskus/syllables"
 	"github.com/mark-marushak/bot-english-book/config"
@@ -15,18 +14,14 @@ import (
 	"golang.org/x/text/language"
 	"google.golang.org/api/option"
 	translatepb "google.golang.org/genproto/googleapis/cloud/translate/v3"
-	"gorm.io/gorm"
-	"log"
 	"strings"
-	"time"
+	"sync"
 	"unicode"
 )
 
-var ExceptionUnsupportedRelationsError = errors.New("unsupported relations: Books")
+var cachedWords *sync.Map
 
-type wordRepository struct {
-	translationClient *translate.TranslationClient
-}
+type wordRepository struct{}
 
 func NewWordRepository() model.WordRepository {
 	return &wordRepository{}
@@ -128,12 +123,12 @@ func (w wordRepository) GetSynonyms(word model.Word) ([]model.Word, error) {
 }
 
 func (w wordRepository) Create(word model.Word) (model.Word, error) {
-	result := db.DB().Create(&word)
+	result := db.Gorm().Create(&word)
 	return word, result.Error
 }
 
 func (w wordRepository) Get(word model.Word) (model.Word, error) {
-	result := db.DB().Where(word).Find(&word)
+	result := db.Gorm().Where(word).Find(&word)
 	return word, result.Error
 }
 
@@ -142,7 +137,20 @@ func (w wordRepository) Update(word model.Word) (model.Word, error) {
 	panic("implement me")
 }
 
-func WordFabric(words []string) <-chan model.Word {
+func WordGen(words map[string]int) <-chan string {
+	out := make(chan string)
+	go func() {
+		for word, _ := range words {
+			select {
+			case out <- word:
+			}
+		}
+	}()
+
+	return out
+}
+
+func WordFabric(words <-chan string) <-chan model.Word {
 	wordChan := make(chan model.Word)
 	languageRepo := model.NewLanguageService(NewLanguageRepository())
 
@@ -151,16 +159,14 @@ func WordFabric(words []string) <-chan model.Word {
 
 		var word string
 		for i := 0; i < len(words); i++ {
-			word = strings.ToLower(words[i])
+			word = strings.ToLower(word)
 			lang, err := languageRepo.DetectLanguage(word)
 			if err != nil {
-				logger.Get().Error("Detect Language Error: %v", err)
 				continue
 			}
 
 			created := model.Word{
 				Text:       word,
-				Frequency:  0,
 				Complexity: syllables.CountSyllables([]byte(word)),
 				LanguageID: lang.ID,
 			}
@@ -178,7 +184,8 @@ func WordTake(wordChan <-chan model.Word) <-chan model.Word {
 	go func() {
 		defer close(wordComplete)
 		for word := range wordChan {
-			got, _ := repo.Get(word)
+			var got model.Word
+			db.Gorm().Raw("select * from words where text = ?", word.Text).Scan(&got)
 			if got.ID > 0 {
 				wordComplete <- got
 				continue
@@ -198,13 +205,11 @@ func CreateAssociation(bookID uint) error {
 	repoBook := model.NewBookService(NewBookRepository())
 	book, err := repoBook.Get(model.Book{ID: bookID})
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
 	res, err := docconv.ConvertPath(book.Path)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -215,26 +220,27 @@ func CreateAssociation(bookID uint) error {
 		return true
 	})
 
-	tx := db.DB().Session(&gorm.Session{PrepareStmt: true})
-	for word := range WordTake(WordFabric(words)) {
-		time.Sleep(time.Nanosecond * 100)
-
-		result := tx.Exec("INSERT INTO book_words (book_id, word_id) VALUES (?, ?);", book.ID, word.ID)
-		if result.Error != nil {
-			logger.Get().Error("Insert error: %v", err)
-		}
-	}
-	tx.Commit()
-
-	unique := make(map[string]bool, len(words))
+	unique := make(map[string]int, len(words))
+	languageRepo := model.NewLanguageService(NewLanguageRepository())
 	for i := 0; i < len(words); i++ {
-		word := strings.ToLower(words[i])
-		unique[word] = true
+		_, err = languageRepo.DetectLanguage(words[i])
+		if err != nil {
+			continue
+		}
+
+		unique[strings.ToLower(words[i])]++
 	}
 
-	db.DB().Preload("Words").Find(&book)
-	if len(unique) != len(book.Words) {
-		return fmt.Errorf("assertion words to book not finish")
+	book.Words = make([]model.Word, 0, len(unique))
+	dbSession := db.Gorm().WithContext(context.Background())
+	for word := range WordTake(WordFabric(WordGen(unique))) {
+		book.Words = append(book.Words, word)
+		dbSession.Exec("insert into book_words (book_id, word_id) values (?, ?) on conflict do nothing", book.ID, word.ID)
+	}
+
+	db.Gorm().Preload("Words").Find(&book)
+	if len(unique)-2 > len(book.Words) {
+		return fmt.Errorf("assertion words to book not finish unique: %d and book.Words %d", len(unique), len(book.Words))
 	}
 
 	return nil

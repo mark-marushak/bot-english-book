@@ -3,7 +3,7 @@ package action
 import (
 	"github.com/mark-marushak/bot-english-book/internal/db"
 	"github.com/mark-marushak/bot-english-book/internal/model"
-	"github.com/mark-marushak/bot-english-book/internal/repository"
+	"github.com/mark-marushak/bot-english-book/internal/repository/gorm"
 	"github.com/mark-marushak/bot-english-book/logger"
 )
 
@@ -17,19 +17,19 @@ func (s StudyStart) Keyboard(i ...interface{}) interface{} {
 
 func (s StudyStart) Output(i ...interface{}) (string, error) {
 	update := s.GetUpdate()
-	userRepo := model.NewUserService(repository.NewUserRepository())
+	userRepo := model.NewUserService(gorm.NewUserRepository())
 	user, err := userRepo.Get(model.User{ChatID: update.FromChat().ID})
 	if err != nil {
 		logger.Get().Error("StudyStart: getting user from db: %v", err)
 	}
 
-	bookRepo := model.NewBookService(repository.NewBookRepository())
+	bookRepo := model.NewBookService(gorm.NewBookRepository())
 	book, err := bookRepo.Get(model.Book{ID: user.BookID})
 	if err != nil {
 		logger.Get().Error("StudyStart: getting book by id: %v", err)
 	}
 
-	db.DB().Where(book).Preload("Words").Find(&book)
+	db.Gorm().Where(book).Preload("Words").Find(&book)
 
 	if len(book.Words) <= 0 {
 		return "Слова ще обробляються. Почекайте повідомлення про закінчення!", nil

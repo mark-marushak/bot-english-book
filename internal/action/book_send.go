@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/mark-marushak/bot-english-book/config"
 	"github.com/mark-marushak/bot-english-book/internal/model"
-	"github.com/mark-marushak/bot-english-book/internal/repository"
+	"github.com/mark-marushak/bot-english-book/internal/repository/gorm"
 	"github.com/mark-marushak/bot-english-book/logger"
 	"github.com/mark-marushak/bot-english-book/storage"
 	"io"
@@ -31,8 +31,8 @@ func (b BookSend) Keyboard(i ...interface{}) interface{} {
 
 func (b BookSend) Output(i ...interface{}) (string, error) {
 	var (
-		bookRepo = model.NewBookService(repository.NewBookRepository())
-		userRepo = model.NewUserService(repository.NewUserRepository())
+		bookRepo = model.NewBookService(gorm.NewBookRepository())
+		userRepo = model.NewUserService(gorm.NewUserRepository())
 		document = b.GetUpdate().Message.Document
 		filepath string
 	)
@@ -56,6 +56,9 @@ func (b BookSend) Output(i ...interface{}) (string, error) {
 
 	filepath, err = b.getFile(filepath)
 	if err != nil {
+		if os.Remove(filepath) != nil {
+			logger.Get().Error("File removing error: %v", err)
+		}
 		return "Це є не допустимий формат. Будь ласка перевірте правельність формату який відправляєте. Формат має бути PDF", nil
 	}
 
@@ -88,13 +91,6 @@ func (b BookSend) Output(i ...interface{}) (string, error) {
 func (b BookSend) getFile(filepath string) (string, error) {
 	var document = b.GetUpdate().Message.Document
 	var err error
-	defer func(err *error) {
-		if err != nil {
-			if os.Remove(filepath) != nil {
-				logger.Get().Error("File removing error: %v", err)
-			}
-		}
-	}(&err)
 
 	file, err := os.Create(filepath)
 	if err != nil {

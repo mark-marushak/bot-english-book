@@ -8,7 +8,7 @@ const OpenLibrary = "Відкрити бібліотеку"
 const UploadBook = "Завантажити книгу"
 const StartRegistration = "Почати реєстрацію"
 const BackToMainMenu = "Головне меню"
-const DoNothing = "Не знаю що робити"
+const DoNothing = "Слідкуй за інструкцією ^"
 
 var MainMenuButton = tg.NewReplyKeyboard(
 	tg.NewKeyboardButtonRow(

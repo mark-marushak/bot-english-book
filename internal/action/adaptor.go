@@ -4,7 +4,7 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mark-marushak/bot-english-book/internal/model"
-	"github.com/mark-marushak/bot-english-book/internal/repository"
+	"github.com/mark-marushak/bot-english-book/internal/repository/gorm"
 	"github.com/mark-marushak/bot-english-book/logger"
 	"math/rand"
 	"reflect"
@@ -31,7 +31,7 @@ func (a AdaptorTelegramAction) GetBotAPI() *tgbotapi.BotAPI {
 }
 
 func (AdaptorTelegramAction) updateStatusUser(chatID int64, bookID uint) error {
-	repo := model.NewUserService(repository.NewUserRepository())
+	repo := model.NewUserService(gorm.NewUserRepository())
 	user, err := repo.Get(model.User{ChatID: chatID})
 	if err != nil {
 		logger.Get().Error("Error while getting user for updating status")
@@ -67,7 +67,7 @@ func (a AdaptorTelegramAction) Lesson(book model.Book) (string, error) {
 		order++
 	}
 
-	wordRepo := model.NewWordService(repository.NewWordRepository())
+	wordRepo := model.NewWordService(gorm.NewWordRepository())
 	for index, order := range indexed {
 		word, err := wordRepo.GetTranslate(book.Words[index])
 		if err != nil {
@@ -78,7 +78,7 @@ func (a AdaptorTelegramAction) Lesson(book model.Book) (string, error) {
 		options[order] = word.Text
 	}
 
-	repo := model.NewUserService(repository.NewUserRepository())
+	repo := model.NewUserService(gorm.NewUserRepository())
 	user, err := repo.Get(model.User{ChatID: a.GetUpdate().FromChat().ID})
 	if err != nil {
 		logger.Get().Error("Error while getting user for updating status")

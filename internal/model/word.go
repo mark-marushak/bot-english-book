@@ -2,15 +2,19 @@ package model
 
 import (
 	"gorm.io/gorm"
+	"time"
 )
 
+//var ExceptionUnsupportedRelationsError = errors.New("unsupported relations: Books")
+
 type Word struct {
-	gorm.Model
-	ID         uint   `gorm:"primaryKey;index:,unique"`
-	Text       string `gorm:"type:varchar(50);index:,unique"`
-	Frequency  int
-	Complexity int
-	LanguageID uint
+	ID         uint           `gorm:"primaryKey;index:,unique"`
+	CreatedAt  time.Time      `db:"created_at"`
+	UpdatedAt  time.Time      `db:"updated_at"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" db:"deleted_at"`
+	Text       string         `gorm:"type:varchar(50);index:,unique"`
+	Complexity int            `db:"complexity"`
+	LanguageID uint           `db:"language_id"`
 	Language   Language
 	Books      []Book `gorm:"many2many:book_words;foreignKey:ID;joinForeignKey:BookID;References:ID;joinReferences:WordID"`
 }
