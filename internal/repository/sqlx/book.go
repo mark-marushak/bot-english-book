@@ -30,7 +30,6 @@ func (b bookRepository) FindAll() ([]model.Book, error) {
 }
 
 func (b bookRepository) Create(book model.Book) (model.Book, error) {
-	var id uint
 	err := db.Sqlx().QueryRow(`insert into books (name, complexity, path, user_id, status, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
 		book.Name,
 		book.Complexity,
@@ -38,15 +37,11 @@ func (b bookRepository) Create(book model.Book) (model.Book, error) {
 		book.UserID,
 		book.Status,
 		time.Now(),
-		time.Now()).Scan(&id)
+		time.Now()).Scan(&book.ID)
 
 	if err != nil {
 		logger.Get().Error("Error while create book: %v", err)
 		return model.Book{}, err
-	}
-
-	if err == nil {
-		book.ID = id
 	}
 
 	return book, err
