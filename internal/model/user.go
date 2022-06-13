@@ -2,7 +2,7 @@ package model
 
 import (
 	"gorm.io/gorm"
-	"os"
+	"time"
 )
 
 const (
@@ -12,8 +12,8 @@ const (
 )
 
 type User struct {
-	gorm.Model
-	ChatID    int64  `gorm:"type:bigint"`
+	ID        uint   `gorm:"primaryKey;"`
+	ChatID    int64  `gorm:"type:bigint;primaryKey;index:,unique"`
 	Phone     string `gorm:"type:varchar(50)"`
 	Email     string `gorm:"type:varchar(255)"`
 	FirstName string `gorm:"type:varchar(255)"`
@@ -21,22 +21,21 @@ type User struct {
 	PollID    int
 	BookID    uint
 	Book      Book
+	CreatedAt time.Time      `db:"created_at"`
+	UpdatedAt time.Time      `db:"updated_at"`
+	DeletedAt gorm.DeletedAt `db:"deleted_at" gorm:"index"`
 }
 
 type UserService interface {
-	Create(user User) error
-	Update(user User) error
+	Create(user User) (User, error)
+	Update(user User) (User, error)
 	Get(user User) (User, error)
-	GetKnowingWords(limit, offset int) ([]Word, error)
-	UploadBook(file os.File) error
 }
 
 type UserRepository interface {
-	Create(user User) error
-	Update(user User) error
+	Create(user User) (User, error)
+	Update(user User) (User, error)
 	Get(user User) (User, error)
-	GetKnowingWords(limit, offset int) ([]Word, error)
-	UploadBook(file os.File) error
 }
 
 type userService struct {
@@ -50,20 +49,12 @@ func NewUserService(repository UserRepository) UserService {
 	}
 }
 
-func (u userService) Create(user User) error {
+func (u userService) Create(user User) (User, error) {
 	return u.repo.Create(user)
 }
 
-func (u userService) Update(user User) error {
+func (u userService) Update(user User) (User, error) {
 	return u.repo.Update(user)
-}
-
-func (u userService) GetKnowingWords(limit, offset int) ([]Word, error) {
-	return u.repo.GetKnowingWords(limit, offset)
-}
-
-func (u userService) UploadBook(file os.File) error {
-	return u.repo.UploadBook(file)
 }
 
 func (u userService) Get(user User) (User, error) {
