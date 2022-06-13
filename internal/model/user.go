@@ -2,6 +2,7 @@ package model
 
 import (
 	"gorm.io/gorm"
+	"time"
 )
 
 const (
@@ -11,8 +12,8 @@ const (
 )
 
 type User struct {
-	gorm.Model
-	ChatID    int64  `gorm:"type:bigint;index:,unique"`
+	ID        uint   `gorm:"primaryKey;"`
+	ChatID    int64  `gorm:"type:bigint;primaryKey;index:,unique"`
 	Phone     string `gorm:"type:varchar(50)"`
 	Email     string `gorm:"type:varchar(255)"`
 	FirstName string `gorm:"type:varchar(255)"`
@@ -20,6 +21,9 @@ type User struct {
 	PollID    int
 	BookID    uint
 	Book      Book
+	CreatedAt time.Time      `db:"created_at"`
+	UpdatedAt time.Time      `db:"updated_at"`
+	DeletedAt gorm.DeletedAt `db:"deleted_at" gorm:"index"`
 }
 
 type UserService interface {
