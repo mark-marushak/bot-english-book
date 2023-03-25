@@ -15,7 +15,7 @@ services:
 #      - "5432:5432"
     image: postgres
     volumes:
-      - /home/sanbox/development/golang-projects/english-new-words/docker-storage/postgres:/var/lib/postgresql/data
+      - /home/sandbox/development/golang-projects/english-new-words/docker-storage/postgres:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=123456
       - POSTGRES_USER=root

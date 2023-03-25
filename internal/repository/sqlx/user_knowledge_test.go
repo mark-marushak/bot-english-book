@@ -138,3 +138,22 @@ func TestUserKnowledgeRepository(t *testing.T) {
 
 	clearFunc()
 }
+
+func TestUserKnowledgeRepositoryRealData(t *testing.T) {
+	config.NewConfig()
+	logger.StartLogger()
+
+	service := model.NewUserKnowledgeService(NewUserKnowledgeRepository())
+
+	t.Run("GetUserKnowledge", func(t *testing.T) {
+		knowledges, err := service.GetUserKnowledge(2)
+		if err != nil {
+			return
+		}
+
+		if len(knowledges) < 6 {
+			t.FailNow()
+		}
+
+	})
+}

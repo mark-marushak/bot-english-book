@@ -1,6 +1,7 @@
 package sqlx
 
 import (
+	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/mark-marushak/bot-english-book/internal/db"
 	"github.com/mark-marushak/bot-english-book/internal/model"
@@ -14,7 +15,7 @@ type educationRepository struct {
 	user model.User
 }
 
-func NewEducationRepository(user model.User, book model.Book) (*educationRepository, error) {
+func NewEducationRepository(user model.User, book model.Book) (model.EducationRepository, error) {
 	if book.ID == 0 {
 		return nil, errors.New("EducationRepository book id not found ")
 	}
@@ -27,9 +28,12 @@ func NewEducationRepository(user model.User, book model.Book) (*educationReposit
 }
 
 func (e educationRepository) CreateRelation() error {
-	_, err := db.Sqlx().Queryx("insert into educations (user_id, book_id, processed, created_at, updated_at, deleted_at) VALUES ($1, $2, $3, $4, $5, $6)",
+	_, err := db.Sqlx().Queryx("insert into educations (user_id, book_id, poll_id, correct_option, word_id, processed, created_at, updated_at, deleted_at) VALUES ($1, $2, $3, $4, $5, $6)",
 		e.user.ID,
 		e.book.ID,
+		0,
+		0,
+		0,
 		0.00,
 		time.Now(),
 		time.Now(),
@@ -54,7 +58,7 @@ func (e educationRepository) GetUnknownWords() (wordIds []uint, err error) {
 	var query string
 	var args []interface{}
 	if len(knownIds) > 0 {
-		query, args, err = sqlx.In("select word_id from book_words where book_id = $1 and word_id not in ($2)", e.book.ID, knownIds)
+		query, args, err = sqlx.In(fmt.Sprintf("select word_id from book_words where book_id = %d and word_id not in (?)", e.book.ID), knownIds)
 		if err != nil {
 			logger.Get().Error("[EducationRepository] Error while prepare statement: %v", err)
 			return nil, err
@@ -88,4 +92,55 @@ func (e educationRepository) GetStatistic() (float32, error) {
 	}
 
 	return processed, nil
+}
+
+func (e educationRepository) SetPoll(pollID, correctOption int, wordID uint) error {
+	_, err := db.Sqlx().Queryx(`update educations set poll_id=$1, correct_option=$2, word_id=$3 where user_id = $4 and book_id = $5`,
+		pollID,
+		correctOption,
+		wordID,
+		e.user.ID,
+		e.book.ID)
+
+	if err != nil {
+		logger.Get().Error("Error while create word: %v", err)
+		return err
+	}
+
+	return err
+}
+
+func (e educationRepository) GetPoll() (int, error) {
+	var pollID int
+	err := db.Sqlx().Get(&pollID, "select poll_id from educations where user_id = $1", e.user.ID)
+	if err != nil {
+		logger.Get().Error("[EducationRepository] Error while getting data from user_knowledges: %v", err)
+		return pollID, err
+	}
+
+	return pollID, nil
+}
+
+func (e educationRepository) Get(userID uint) (model.Education, error) {
+	var education model.Education
+	err := db.Sqlx().Get(&education, "select * from educations where user_id = $1", userID)
+	if err != nil {
+		logger.Get().Error("[EducationRepository] Error while getting data from user_knowledges: %v", err)
+		return education, err
+	}
+
+	return education, nil
+}
+
+func (e educationRepository) Update(userID, bookID uint) error {
+	_, err := db.Sqlx().Queryx(`update educations set book_id=$1 where user_id = $2`,
+		bookID,
+		userID)
+
+	if err != nil {
+		logger.Get().Error("Error while update education bookID: %v", err)
+		return err
+	}
+
+	return err
 }

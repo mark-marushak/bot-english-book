@@ -23,7 +23,6 @@ type Book struct {
 	Path       string         `gorm:"type: varchar(500);"`
 	UserID     uint           `db:"user_id"`
 	Status     string         `gorm:"type: varchar(10)"`
-	Words      []Word         `gorm:"many2many:book_words;foreignKey:ID;joinForeignKey:BookID;References:ID;joinReferences:WordID"`
 	CreatedAt  time.Time      `db:"created_at"`
 	UpdatedAt  time.Time      `db:"updated_at"`
 	DeletedAt  gorm.DeletedAt `db:"deleted_at" gorm:"index"`

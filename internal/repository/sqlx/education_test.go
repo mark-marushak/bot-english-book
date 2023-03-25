@@ -86,7 +86,7 @@ func TestEducationRepository(t *testing.T) {
 		}
 	})
 
-	t.Run("UnknownWords", func(t *testing.T) {
+	t.Run("GetUnknownWords", func(t *testing.T) {
 		_, err = educationService.GetUnknownWords()
 		if err != nil {
 			logger.Get().Error("[TestEducationRepository] Error while getting unknown words: %v", err)
@@ -106,5 +106,96 @@ func TestEducationRepository(t *testing.T) {
 		}
 	})
 
+	t.Run("SetPoll", func(t *testing.T) {
+		err = educationService.SetPoll(1233, 0, 123)
+		if err != nil {
+			logger.Get().Error("[TestEducationRepository] Error while getting statistic: %v", err)
+			failFunc(t)
+		}
+	})
+
+	t.Run("GetPoll", func(t *testing.T) {
+		pollID, err := educationService.GetPoll()
+		if err != nil {
+			logger.Get().Error("[TestEducationRepository] Error while getting statistic: %v", err)
+			failFunc(t)
+		}
+
+		if pollID != 1233 {
+			failFunc(t)
+		}
+	})
+
 	clearFunc()
+}
+
+func TestEducationRepositoryRealData(t *testing.T) {
+	config.NewConfig()
+	logger.StartLogger()
+
+	var err error
+	user := model.User{
+		ID:     2,
+		ChatID: 417517295,
+		Phone:  "+380664780362",
+	}
+
+	book := model.Book{
+		ID:   2,
+		Name: "Nigel Poulton - The Kubernetes Book (2020).pdf",
+	}
+
+	failFunc := func(t *testing.T) {
+		t.FailNow()
+	}
+
+	repo, err := NewEducationRepository(user, book)
+	if err != nil {
+		failFunc(t)
+		logger.Get().Error("[TestEducationRepository] Error while create education repository: %v", err)
+		failFunc(t)
+	}
+
+	educationService := model.NewEducationService(repo)
+
+	t.Run("GetUnknownWords", func(t *testing.T) {
+		_, err = educationService.GetUnknownWords()
+		if err != nil {
+			logger.Get().Error("[TestEducationRepository] Error while getting unknown words: %v", err)
+			failFunc(t)
+		}
+	})
+
+	t.Run("GetStatistic", func(t *testing.T) {
+		processed, err := educationService.GetStatistic()
+		if err != nil {
+			logger.Get().Error("[TestEducationRepository] Error while getting statistic: %v", err)
+			failFunc(t)
+		}
+
+		if processed != 0.00 {
+			failFunc(t)
+		}
+	})
+
+	t.Run("SetPoll", func(t *testing.T) {
+		err = educationService.SetPoll(1233, 0, 123)
+		if err != nil {
+			logger.Get().Error("[TestEducationRepository] Error while getting statistic: %v", err)
+			failFunc(t)
+		}
+	})
+
+	t.Run("GetPoll", func(t *testing.T) {
+		pollID, err := educationService.GetPoll()
+		if err != nil {
+			logger.Get().Error("[TestEducationRepository] Error while getting statistic: %v", err)
+			failFunc(t)
+		}
+
+		if pollID != 1233 {
+			failFunc(t)
+		}
+	})
+
 }

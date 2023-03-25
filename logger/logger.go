@@ -25,6 +25,10 @@ func Get() LoggerService {
 }
 
 func NewLoggerService(repository LoggerRepository) LoggerService {
+	if logger != nil {
+		return logger
+	}
+
 	logger = &loggerService{
 		repo: repository,
 	}

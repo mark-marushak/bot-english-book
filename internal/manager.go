@@ -47,9 +47,9 @@ func (m Manager) changeStatusBook(book model.Book) error {
 
 func (m Manager) notifyRelatedUsers(book model.Book) (err error) {
 	var users []model.User
-	tx := db.Gorm().Model(&model.User{}).Where("book_id = ?", book.ID).Find(&users)
-	if tx.Error != nil {
-		return tx.Error
+	err = db.Sqlx().Select(&users, "select users.* from users inner join educations e on users.id = e.user_id where book_id = $1", book.ID)
+	if err != nil {
+		return err
 	}
 
 	msg := func(chatID int64) tgbotapi.Chattable {
@@ -82,16 +82,15 @@ func (m Manager) Start() {
 					continue
 				}
 
-				err = m.changeStatusBook(books[i])
-				if err != nil {
-					logger.Get().Error("The book %d was prepared %v", err)
-				}
-
 				err = m.notifyRelatedUsers(books[i])
 				if err != nil {
 					logger.Get().Error("The message wasn't reached the client. Client didn't get notification: %v", err)
 				}
 
+				err = m.changeStatusBook(books[i])
+				if err != nil {
+					logger.Get().Error("The book %d was prepared %v", err)
+				}
 			}
 		}
 

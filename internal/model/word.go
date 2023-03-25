@@ -15,8 +15,6 @@ type Word struct {
 	Text       string         `gorm:"type:varchar(50);index:,unique"`
 	Complexity int            `db:"complexity"`
 	LanguageID uint           `db:"language_id"`
-	Language   Language
-	Books      []Book `gorm:"many2many:book_words;foreignKey:ID;joinForeignKey:BookID;References:ID;joinReferences:WordID"`
 }
 
 type WordService interface {

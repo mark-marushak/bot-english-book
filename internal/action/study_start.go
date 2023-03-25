@@ -23,19 +23,22 @@ func (s StudyStart) Output(i ...interface{}) (string, error) {
 		logger.Get().Error("StudyStart: getting user from db: %v", err)
 	}
 
-	bookRepo := model.NewBookService(gorm.NewBookRepository())
-	book, err := bookRepo.Get(model.Book{ID: user.BookID})
+	education, err := userRepo.GetEducationByUserID(user.ID)
 	if err != nil {
-		logger.Get().Error("StudyStart: getting book by id: %v", err)
+		return "", err
 	}
 
-	db.Gorm().Where(book).Preload("Words").Find(&book)
+	var count int
+	err = db.Sqlx().Get(&count, `select count(*) from book_words where book_id = $1`, education.BookID)
+	if err != nil {
+		return "", err
+	}
 
-	if len(book.Words) <= 0 {
+	if count <= 0 {
 		return "Слова ще обробляються. Почекайте повідомлення про закінчення!", nil
 	}
 
-	out, err := s.Lesson(book)
+	out, err := s.Lesson(model.Book{ID: education.BookID})
 	if err != nil {
 		return out, nil
 	}

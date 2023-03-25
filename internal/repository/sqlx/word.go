@@ -64,7 +64,7 @@ func (w wordRepository) Create(word model.Word) (model.Word, error) {
 	err := db.Sqlx().QueryRow(`insert into words (text, complexity, language_id, created_at, updated_at) values ($1, $2, $3, $4, $5) RETURNING id`,
 		word.Text,
 		word.Complexity,
-		word.Language.ID,
+		word.LanguageID,
 		time.Now(),
 		time.Now()).Scan(&id)
 
@@ -146,7 +146,7 @@ func WordFabric(repo model.LanguageService, words <-chan string) <-chan model.Wo
 			created := model.Word{
 				Text:       word,
 				Complexity: syllables.CountSyllables([]byte(word)),
-				Language:   lang,
+				LanguageID: lang.ID,
 			}
 
 			out <- created
@@ -239,7 +239,7 @@ func CreateAssociation(bookID uint) error {
 	}
 
 	if len(unique) != len(bw) {
-		return fmt.Errorf("assertion words to book not finish unique: %d and book.Words %d", len(unique), len(book.Words))
+		return fmt.Errorf("assertion words to book not finish unique: %d and book.Words %d", len(unique), len(bw))
 	}
 
 	return nil

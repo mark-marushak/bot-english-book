@@ -20,9 +20,10 @@ func (u *UserRoute) SetupRoutes() telegram.RouteService {
 			bookIDPattern: &action.BookChoose{},
 		},
 		"messages": {
-			action.StartStudy:     &action.StudyStart{},
-			action.NextLesson:     &action.StudyStart{},
-			action.BackToMainMenu: &action.MainMenu{},
+			action.StartStudy:             &action.StudyStart{},
+			action.NextLesson:             &action.StudyStart{},
+			action.BackToMainMenu:         &action.MainMenu{},
+			action.DisplayStatisticButton: &action.DisplayStatistic{},
 		},
 		"commands": {
 			"start": &action.StartHandler{},
@@ -32,6 +33,9 @@ func (u *UserRoute) SetupRoutes() telegram.RouteService {
 		},
 		"contact": {
 			"": &action.UserAskPhone{},
+		},
+		"pollAnswer": {
+			"": &action.PollAnswer{},
 		},
 	}
 	return u
@@ -73,6 +77,13 @@ func (u UserRoute) find(list, text string) (telegram.ActionService, error) {
 }
 
 func (u *UserRoute) Analyze() (chatID int64, err error) {
+
+	if u.Update.PollAnswer != nil {
+		u.action, err = u.find("pollAnswer", "")
+		chatID = u.Update.PollAnswer.User.ID
+		return
+	}
+
 	if u.Update.FromChat() == nil {
 		return 0, telegram.RouteNotFoundError
 	}
