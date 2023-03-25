@@ -1,6 +1,7 @@
 package sqlx
 
 import (
+	"database/sql"
 	"github.com/mark-marushak/bot-english-book/internal/db"
 	"github.com/mark-marushak/bot-english-book/internal/model"
 	"github.com/mark-marushak/bot-english-book/logger"
@@ -37,7 +38,7 @@ func (u userKnowledgeRepository) GetLearned(knowledge model.UserKnowledge) (floa
 
 func (u userKnowledgeRepository) StoreAttempt(knowledge model.UserKnowledge) error {
 	_, err := db.Sqlx().Queryx(`update user_knowledges set attempt = $1 where user_id = $2 and word_id = $3`,
-		knowledge.Attempt,
+		knowledge.Attempt+1,
 		knowledge.UserID,
 		knowledge.WordID)
 
@@ -51,7 +52,7 @@ func (u userKnowledgeRepository) StoreAttempt(knowledge model.UserKnowledge) err
 
 func (u userKnowledgeRepository) StoreSuccess(knowledge model.UserKnowledge) error {
 	_, err := db.Sqlx().Exec(`update user_knowledges set success = $1 where user_id = $2 and word_id = $3`,
-		knowledge.Success,
+		knowledge.Success+1,
 		knowledge.UserID,
 		knowledge.WordID)
 
@@ -80,14 +81,35 @@ func (u userKnowledgeRepository) Create(knowledge model.UserKnowledge) (model.Us
 }
 
 func (u userKnowledgeRepository) Get(knowledge model.UserKnowledge) (model.UserKnowledge, error) {
-	err := db.Sqlx().Get(&knowledge, `select * from user_knowledges where user_id = $1 and word_id = $2 limit 1;`,
+	var get model.UserKnowledge
+	err := db.Sqlx().Get(&get, `select * from user_knowledges where user_id = $1 and word_id = $2 limit 1;`,
 		knowledge.UserID,
 		knowledge.WordID)
 
-	if err != nil {
-		logger.Get().Error("Error while getting user_knowledge: %v", err)
-		return model.UserKnowledge{}, err
+	if err == sql.ErrNoRows {
+		return get, nil
 	}
 
-	return knowledge, err
+	if err != nil {
+		logger.Get().Error("Error while getting user_knowledge: %v", err)
+		return get, err
+	}
+
+	return get, err
+}
+
+func (u userKnowledgeRepository) GetUserKnowledge(userID uint) ([]model.UserKnowledge, error) {
+	var knowledges []model.UserKnowledge
+	err := db.Sqlx().Select(&knowledges, `select * from user_knowledges where user_id = $1;`, userID)
+
+	if err == sql.ErrNoRows {
+		return knowledges, nil
+	}
+
+	if err != nil {
+		logger.Get().Error("Error while getting all knowleges: %v", err)
+		return knowledges, err
+	}
+
+	return knowledges, err
 }

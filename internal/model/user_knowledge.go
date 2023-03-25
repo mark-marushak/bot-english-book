@@ -1,11 +1,11 @@
 package model
 
 type UserKnowledge struct {
-	UserID  uint    `db:"user_id" gorm:"foreignKey"`
-	WordID  uint    `db:"word_id" gorm:"foreignKey"`
-	Learned float32 `db:"learned"`
-	Attempt int     `db:"attempt"`
-	Success int     `db:"success"`
+	UserID  uint `db:"user_id" gorm:"primaryKey"`
+	WordID  uint `db:"word_id" gorm:"primaryKey"`
+	Learned float32
+	Attempt int
+	Success int
 }
 
 type userKnowledgeService struct {
@@ -19,6 +19,7 @@ type UserKnowledgeRepository interface {
 	StoreSuccess(knowledge UserKnowledge) error
 	Create(knowledge UserKnowledge) (UserKnowledge, error)
 	Get(knowledge UserKnowledge) (UserKnowledge, error)
+	GetUserKnowledge(userID uint) ([]UserKnowledge, error)
 }
 
 type UserKnowledgeService interface {
@@ -28,6 +29,7 @@ type UserKnowledgeService interface {
 	StoreSuccess(knowledge UserKnowledge) error
 	Create(knowledge UserKnowledge) (UserKnowledge, error)
 	Get(knowledge UserKnowledge) (UserKnowledge, error)
+	GetUserKnowledge(userID uint) ([]UserKnowledge, error)
 }
 
 func NewUserKnowledgeService(repo UserKnowledgeRepository) UserKnowledgeService {
@@ -56,4 +58,8 @@ func (u userKnowledgeService) Create(knowledge UserKnowledge) (UserKnowledge, er
 
 func (u userKnowledgeService) Get(knowledge UserKnowledge) (UserKnowledge, error) {
 	return u.repo.Get(knowledge)
+}
+
+func (u userKnowledgeService) GetUserKnowledge(userID uint) ([]UserKnowledge, error) {
+	return u.repo.GetUserKnowledge(userID)
 }

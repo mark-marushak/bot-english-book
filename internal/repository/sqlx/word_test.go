@@ -28,7 +28,7 @@ func TestWordRepository(t *testing.T) {
 		word := model.Word{
 			Text:       text,
 			Complexity: 2,
-			Language:   lang,
+			LanguageID: lang.ID,
 		}
 
 		word, err = repoWord.Create(word)

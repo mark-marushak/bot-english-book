@@ -24,7 +24,7 @@ func (u UserAskPhone) Output(i ...interface{}) (string, error) {
 	contact := u.GetUpdate().Message.Contact
 
 	repo := model.NewUserService(gorm.NewUserRepository())
-	err := repo.Create(model.User{
+	_, err := repo.Create(model.User{
 		ChatID:    u.GetUpdate().SentFrom().ID,
 		Phone:     contact.PhoneNumber,
 		Email:     "",

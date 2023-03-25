@@ -41,11 +41,6 @@ func PrepareTable() error {
 		}
 	}
 
-	err := Gorm().SetupJoinTable(&model.Book{}, "Words", &model.BookWord{})
-	if err != nil {
-		return fmt.Errorf("Error while setup join table book_words: %v", err)
-	}
-
 	var languages int64
 	Gorm().Model(&model.Language{}).Where("code in ('en', 'ua')").Count(&languages)
 	if languages <= 0 {

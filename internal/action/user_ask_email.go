@@ -33,7 +33,7 @@ func (u UserAskEmail) Output(i ...interface{}) (string, error) {
 
 	user.Email = u.GetUpdate().Message.Text
 
-	err = repo.Update(user)
+	_, err = repo.Update(user)
 	if err != nil {
 		return "", fmt.Errorf("UserAskEmail: updating %v", err)
 	}
